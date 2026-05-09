@@ -1,0 +1,290 @@
+﻿Γöé
+Γùç  Config warnings ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓò«
+Γöé                                                                         Γöé
+Γöé  - plugins.entries.google-antigravity-auth: plugin removed:             Γöé
+Γöé    google-antigravity-auth (stale config entry ignored; remove it from  Γöé
+Γöé    plugins config)                                                      Γöé
+Γöé                                                                         Γöé
+Γö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓò»
+Plugins (57/98 loaded)
+Source roots:
+  stock: C:\Users\Administrator\AppData\Roaming\npm\node_modules\openclaw\dist\extensions
+
+ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé Name         Γöé ID       Γöé Format   Γöé Status   Γöé Source                                                   Γöé Version   Γöé
+Γö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöñ
+Γöé ACPX Runtime Γöé acpx     Γöé openclaw Γöé loaded   Γöé stock:acpx/index.js                                      Γöé 2026.4.15 Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé Embedded ACP runtime backend with plugin-owned session   Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé and transport management.                                Γöé           Γöé
+Γöé Active       Γöé active-  Γöé openclaw Γöé disabled Γöé stock:active-memory/index.js                             Γöé 2026.4.15 Γöé
+Γöé Memory       Γöé memory   Γöé          Γöé          Γöé Runs a bounded blocking memory sub-agent before          Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé eligible conversational replies and injects relevant     Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé memory into prompt context.                              Γöé           Γöé
+Γöé @openclaw/   Γöé alibaba  Γöé openclaw Γöé loaded   Γöé stock:alibaba/index.js                                   Γöé 2026.4.15 Γöé
+Γöé alibaba-     Γöé          Γöé          Γöé          Γöé OpenClaw Alibaba Model Studio video provider plugin      Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé amazon-  Γöé openclaw Γöé loaded   Γöé stock:amazon-bedrock/index.js                            Γöé 2026.4.15 Γöé
+Γöé amazon-      Γöé bedrock  Γöé          Γöé          Γöé OpenClaw Amazon Bedrock provider plugin                  Γöé           Γöé
+Γöé bedrock-     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé amazon-  Γöé openclaw Γöé loaded   Γöé stock:amazon-bedrock-mantle/index.js                     Γöé 2026.4.15 Γöé
+Γöé amazon-      Γöé bedrock- Γöé          Γöé          Γöé OpenClaw Amazon Bedrock Mantle (OpenAI-compatible)       Γöé           Γöé
+Γöé bedrock-     Γöé mantle   Γöé          Γöé          Γöé provider plugin                                          Γöé           Γöé
+Γöé mantle-      Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé anthropi Γöé openclaw Γöé loaded   Γöé stock:anthropic/index.js                                 Γöé 2026.4.15 Γöé
+Γöé anthropic-   Γöé c        Γöé          Γöé          Γöé OpenClaw Anthropic provider plugin                       Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé anthropi Γöé openclaw Γöé loaded   Γöé stock:anthropic-vertex/index.js                          Γöé 2026.4.15 Γöé
+Γöé anthropic-   Γöé c-vertex Γöé          Γöé          Γöé OpenClaw Anthropic Vertex provider plugin                Γöé           Γöé
+Γöé vertex-      Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé arcee    Γöé openclaw Γöé loaded   Γöé stock:arcee/index.js                                     Γöé 2026.4.15 Γöé
+Γöé arcee-       Γöé          Γöé          Γöé          Γöé OpenClaw Arcee provider plugin                           Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé bluebubb Γöé openclaw Γöé disabled Γöé stock:bluebubbles/index.js                               Γöé 2026.4.15 Γöé
+Γöé bluebubbles  Γöé les      Γöé          Γöé          Γöé OpenClaw BlueBubbles channel plugin                      Γöé           Γöé
+Γöé @openclaw/   Γöé brave    Γöé openclaw Γöé disabled Γöé stock:brave/index.js                                     Γöé 2026.4.15 Γöé
+Γöé brave-plugin Γöé          Γöé          Γöé          Γöé OpenClaw Brave plugin                                    Γöé           Γöé
+Γöé @openclaw/   Γöé browser  Γöé openclaw Γöé loaded   Γöé stock:browser/index.js                                   Γöé 2026.4.15 Γöé
+Γöé browser-     Γöé          Γöé          Γöé          Γöé OpenClaw browser tool plugin                             Γöé           Γöé
+Γöé plugin       Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé byteplus Γöé openclaw Γöé loaded   Γöé stock:byteplus/index.js                                  Γöé 2026.4.15 Γöé
+Γöé byteplus-    Γöé          Γöé          Γöé          Γöé OpenClaw BytePlus provider plugin                        Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé chutes   Γöé openclaw Γöé loaded   Γöé stock:chutes/index.js                                    Γöé 2026.4.15 Γöé
+Γöé chutes-      Γöé          Γöé          Γöé          Γöé OpenClaw Chutes.ai provider plugin                       Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé cloudfla Γöé openclaw Γöé loaded   Γöé stock:cloudflare-ai-gateway/index.js                     Γöé 2026.4.15 Γöé
+Γöé cloudflare-  Γöé re-ai-   Γöé          Γöé          Γöé OpenClaw Cloudflare AI Gateway provider plugin           Γöé           Γöé
+Γöé ai-gateway-  Γöé gateway  Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé Codex        Γöé codex    Γöé openclaw Γöé loaded   Γöé stock:codex/index.js                                     Γöé 2026.4.15 Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé Codex app-server harness and Codex-managed GPT model     Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé catalog.                                                 Γöé           Γöé
+Γöé @openclaw/   Γöé comfy    Γöé openclaw Γöé loaded   Γöé stock:comfy/index.js                                     Γöé 2026.4.15 Γöé
+Γöé comfy-       Γöé          Γöé          Γöé          Γöé OpenClaw ComfyUI provider plugin                         Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé copilot- Γöé openclaw Γöé loaded   Γöé stock:copilot-proxy/index.js                             Γöé 2026.4.15 Γöé
+Γöé copilot-     Γöé proxy    Γöé          Γöé          Γöé OpenClaw Copilot Proxy provider plugin                   Γöé           Γöé
+Γöé proxy        Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé deepgram Γöé openclaw Γöé loaded   Γöé stock:deepgram/index.js                                  Γöé 2026.4.15 Γöé
+Γöé deepgram-    Γöé          Γöé          Γöé          Γöé OpenClaw Deepgram media-understanding provider           Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé deepseek Γöé openclaw Γöé loaded   Γöé stock:deepseek/index.js                                  Γöé 2026.4.15 Γöé
+Γöé deepseek-    Γöé          Γöé          Γöé          Γöé OpenClaw DeepSeek provider plugin                        Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé Device       Γöé device-  Γöé openclaw Γöé loaded   Γöé stock:device-pair/index.js                               Γöé 2026.4.15 Γöé
+Γöé Pairing      Γöé pair     Γöé          Γöé          Γöé Generate setup codes and approve device pairing          Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé requests.                                                Γöé           Γöé
+Γöé @openclaw/   Γöé diagnost Γöé openclaw Γöé disabled Γöé stock:diagnostics-otel/index.js                          Γöé 2026.4.15 Γöé
+Γöé diagnostics- Γöé ics-otel Γöé          Γöé          Γöé OpenClaw diagnostics OpenTelemetry exporter              Γöé           Γöé
+Γöé otel         Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé Diffs        Γöé diffs    Γöé openclaw Γöé disabled Γöé stock:diffs/index.js                                     Γöé 2026.4.15 Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé Read-only diff viewer and file renderer for agents.      Γöé           Γöé
+Γöé @openclaw/   Γöé discord  Γöé openclaw Γöé disabled Γöé stock:discord/index.js                                   Γöé 2026.4.15 Γöé
+Γöé discord      Γöé          Γöé          Γöé          Γöé OpenClaw Discord channel plugin                          Γöé           Γöé
+Γöé @openclaw/   Γöé duckduck Γöé openclaw Γöé disabled Γöé stock:duckduckgo/index.js                                Γöé 2026.4.15 Γöé
+Γöé duckduckgo-  Γöé go       Γöé          Γöé          Γöé OpenClaw DuckDuckGo plugin                               Γöé           Γöé
+Γöé plugin       Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé elevenla Γöé openclaw Γöé loaded   Γöé stock:elevenlabs/index.js                                Γöé 2026.4.15 Γöé
+Γöé elevenlabs-  Γöé bs       Γöé          Γöé          Γöé OpenClaw ElevenLabs speech plugin                        Γöé           Γöé
+Γöé speech       Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé exa      Γöé openclaw Γöé disabled Γöé stock:exa/index.js                                       Γöé 2026.4.15 Γöé
+Γöé exa-plugin   Γöé          Γöé          Γöé          Γöé OpenClaw Exa plugin                                      Γöé           Γöé
+Γöé @openclaw/   Γöé fal      Γöé openclaw Γöé loaded   Γöé stock:fal/index.js                                       Γöé 2026.4.15 Γöé
+Γöé fal-provider Γöé          Γöé          Γöé          Γöé OpenClaw fal provider plugin                             Γöé           Γöé
+Γöé @openclaw/   Γöé feishu   Γöé openclaw Γöé disabled Γöé stock:feishu/index.js                                    Γöé 2026.4.15 Γöé
+Γöé feishu       Γöé          Γöé          Γöé          Γöé OpenClaw Feishu/Lark channel plugin (community           Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé maintained by @m1heng)                                   Γöé           Γöé
+Γöé @openclaw/   Γöé firecraw Γöé openclaw Γöé disabled Γöé stock:firecrawl/index.js                                 Γöé 2026.4.15 Γöé
+Γöé firecrawl-   Γöé l        Γöé          Γöé          Γöé OpenClaw Firecrawl plugin                                Γöé           Γöé
+Γöé plugin       Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé firework Γöé openclaw Γöé loaded   Γöé stock:fireworks/index.js                                 Γöé 2026.4.15 Γöé
+Γöé fireworks-   Γöé s        Γöé          Γöé          Γöé OpenClaw Fireworks provider plugin                       Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé github-  Γöé openclaw Γöé loaded   Γöé stock:github-copilot/index.js                            Γöé 2026.4.15 Γöé
+Γöé github-      Γöé copilot  Γöé          Γöé          Γöé OpenClaw GitHub Copilot provider plugin                  Γöé           Γöé
+Γöé copilot-     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé google   Γöé openclaw Γöé loaded   Γöé stock:google/index.js                                    Γöé 2026.4.15 Γöé
+Γöé google-      Γöé          Γöé          Γöé          Γöé OpenClaw Google plugin                                   Γöé           Γöé
+Γöé plugin       Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé googlech Γöé openclaw Γöé disabled Γöé stock:googlechat/index.js                                Γöé 2026.4.15 Γöé
+Γöé googlechat   Γöé at       Γöé          Γöé          Γöé OpenClaw Google Chat channel plugin                      Γöé           Γöé
+Γöé @openclaw/   Γöé groq     Γöé openclaw Γöé loaded   Γöé stock:groq/index.js                                      Γöé 2026.4.15 Γöé
+Γöé groq-        Γöé          Γöé          Γöé          Γöé OpenClaw Groq media-understanding provider               Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé huggingf Γöé openclaw Γöé loaded   Γöé stock:huggingface/index.js                               Γöé 2026.4.15 Γöé
+Γöé huggingface- Γöé ace      Γöé          Γöé          Γöé OpenClaw Hugging Face provider plugin                    Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé imessage Γöé openclaw Γöé disabled Γöé stock:imessage/index.js                                  Γöé 2026.4.15 Γöé
+Γöé imessage     Γöé          Γöé          Γöé          Γöé OpenClaw iMessage channel plugin                         Γöé           Γöé
+Γöé @openclaw/   Γöé irc      Γöé openclaw Γöé disabled Γöé stock:irc/index.js                                       Γöé 2026.4.15 Γöé
+Γöé irc          Γöé          Γöé          Γöé          Γöé OpenClaw IRC channel plugin                              Γöé           Γöé
+Γöé @openclaw/   Γöé kilocode Γöé openclaw Γöé loaded   Γöé stock:kilocode/index.js                                  Γöé 2026.4.15 Γöé
+Γöé kilocode-    Γöé          Γöé          Γöé          Γöé OpenClaw Kilo Gateway provider plugin                    Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé kimi     Γöé openclaw Γöé loaded   Γöé stock:kimi-coding/index.js                               Γöé 2026.4.15 Γöé
+Γöé kimi-        Γöé          Γöé          Γöé          Γöé OpenClaw Kimi provider plugin                            Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé line     Γöé openclaw Γöé disabled Γöé stock:line/index.js                                      Γöé 2026.4.15 Γöé
+Γöé line         Γöé          Γöé          Γöé          Γöé OpenClaw LINE channel plugin                             Γöé           Γöé
+Γöé @openclaw/   Γöé litellm  Γöé openclaw Γöé loaded   Γöé stock:litellm/index.js                                   Γöé 2026.4.15 Γöé
+Γöé litellm-     Γöé          Γöé          Γöé          Γöé OpenClaw LiteLLM provider plugin                         Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé LLM Task     Γöé llm-task Γöé openclaw Γöé disabled Γöé stock:llm-task/index.js                                  Γöé 2026.4.15 Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé Generic JSON-only LLM tool for structured tasks          Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé callable from workflows.                                 Γöé           Γöé
+Γöé @openclaw/   Γöé lmstudio Γöé openclaw Γöé loaded   Γöé stock:lmstudio/index.js                                  Γöé 2026.4.15 Γöé
+Γöé lmstudio-    Γöé          Γöé          Γöé          Γöé OpenClaw LM Studio provider plugin                       Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé Lobster      Γöé lobster  Γöé openclaw Γöé disabled Γöé stock:lobster/index.js                                   Γöé 2026.4.15 Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé Typed workflow tool with resumable approvals.            Γöé           Γöé
+Γöé @openclaw/   Γöé matrix   Γöé openclaw Γöé disabled Γöé stock:matrix/index.js                                    Γöé 2026.4.15 Γöé
+Γöé matrix       Γöé          Γöé          Γöé          Γöé OpenClaw Matrix channel plugin                           Γöé           Γöé
+Γöé @openclaw/   Γöé mattermo Γöé openclaw Γöé disabled Γöé stock:mattermost/index.js                                Γöé 2026.4.15 Γöé
+Γöé mattermost   Γöé st       Γöé          Γöé          Γöé OpenClaw Mattermost channel plugin                       Γöé           Γöé
+Γöé @openclaw/   Γöé memory-  Γöé openclaw Γöé loaded   Γöé stock:memory-core/index.js                               Γöé 2026.4.15 Γöé
+Γöé memory-core  Γöé core     Γöé          Γöé          Γöé OpenClaw core memory search plugin                       Γöé           Γöé
+Γöé @openclaw/   Γöé memory-  Γöé openclaw Γöé disabled Γöé stock:memory-lancedb/index.js                            Γöé 2026.4.15 Γöé
+Γöé memory-      Γöé lancedb  Γöé          Γöé          Γöé OpenClaw LanceDB-backed long-term memory plugin with     Γöé           Γöé
+Γöé lancedb      Γöé          Γöé          Γöé          Γöé auto-recall/capture                                      Γöé           Γöé
+Γöé Memory Wiki  Γöé memory-  Γöé openclaw Γöé disabled Γöé stock:memory-wiki/index.js                               Γöé 2026.4.15 Γöé
+Γöé              Γöé wiki     Γöé          Γöé          Γöé Persistent wiki compiler and Obsidian-friendly           Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé knowledge vault for OpenClaw.                            Γöé           Γöé
+Γöé @openclaw/   Γöé microsof Γöé openclaw Γöé loaded   Γöé stock:microsoft/index.js                                 Γöé 2026.4.15 Γöé
+Γöé microsoft-   Γöé t        Γöé          Γöé          Γöé OpenClaw Microsoft speech plugin                         Γöé           Γöé
+Γöé speech       Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé microsof Γöé openclaw Γöé loaded   Γöé stock:microsoft-foundry/index.js                         Γöé 2026.4.15 Γöé
+Γöé microsoft-   Γöé t-       Γöé          Γöé          Γöé OpenClaw Microsoft Foundry provider plugin               Γöé           Γöé
+Γöé foundry      Γöé foundry  Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé minimax  Γöé openclaw Γöé loaded   Γöé stock:minimax/index.js                                   Γöé 2026.4.15 Γöé
+Γöé minimax-     Γöé          Γöé          Γöé          Γöé OpenClaw MiniMax provider and OAuth plugin               Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé mistral  Γöé openclaw Γöé loaded   Γöé stock:mistral/index.js                                   Γöé 2026.4.15 Γöé
+Γöé mistral-     Γöé          Γöé          Γöé          Γöé OpenClaw Mistral provider plugin                         Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé moonshot Γöé openclaw Γöé loaded   Γöé stock:moonshot/index.js                                  Γöé 2026.4.15 Γöé
+Γöé moonshot-    Γöé          Γöé          Γöé          Γöé OpenClaw Moonshot provider plugin                        Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé msteams  Γöé openclaw Γöé disabled Γöé stock:msteams/index.js                                   Γöé 2026.4.15 Γöé
+Γöé msteams      Γöé          Γöé          Γöé          Γöé OpenClaw Microsoft Teams channel plugin                  Γöé           Γöé
+Γöé @openclaw/   Γöé nextclou Γöé openclaw Γöé disabled Γöé stock:nextcloud-talk/index.js                            Γöé 2026.4.15 Γöé
+Γöé nextcloud-   Γöé d-talk   Γöé          Γöé          Γöé OpenClaw Nextcloud Talk channel plugin                   Γöé           Γöé
+Γöé talk         Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé nostr    Γöé openclaw Γöé disabled Γöé stock:nostr/index.js                                     Γöé 2026.4.15 Γöé
+Γöé nostr        Γöé          Γöé          Γöé          Γöé OpenClaw Nostr channel plugin for NIP-04 encrypted DMs   Γöé           Γöé
+Γöé @openclaw/   Γöé nvidia   Γöé openclaw Γöé loaded   Γöé stock:nvidia/index.js                                    Γöé 2026.4.15 Γöé
+Γöé nvidia-      Γöé          Γöé          Γöé          Γöé OpenClaw NVIDIA provider plugin                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé ollama   Γöé openclaw Γöé loaded   Γöé stock:ollama/index.js                                    Γöé 2026.4.15 Γöé
+Γöé ollama-      Γöé          Γöé          Γöé          Γöé OpenClaw Ollama provider plugin                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé OpenProse    Γöé open-    Γöé openclaw Γöé disabled Γöé stock:open-prose/index.js                                Γöé 2026.4.15 Γöé
+Γöé              Γöé prose    Γöé          Γöé          Γöé OpenProse VM skill pack with a /prose slash command.     Γöé           Γöé
+Γöé @openclaw/   Γöé openai   Γöé openclaw Γöé loaded   Γöé stock:openai/index.js                                    Γöé 2026.4.15 Γöé
+Γöé openai-      Γöé          Γöé          Γöé          Γöé OpenClaw OpenAI provider plugins                         Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé opencode Γöé openclaw Γöé loaded   Γöé stock:opencode/index.js                                  Γöé 2026.4.15 Γöé
+Γöé opencode-    Γöé          Γöé          Γöé          Γöé OpenClaw OpenCode Zen provider plugin                    Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé opencode Γöé openclaw Γöé loaded   Γöé stock:opencode-go/index.js                               Γöé 2026.4.15 Γöé
+Γöé opencode-go- Γöé -go      Γöé          Γöé          Γöé OpenClaw OpenCode Go provider plugin                     Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé openrout Γöé openclaw Γöé loaded   Γöé stock:openrouter/index.js                                Γöé 2026.4.15 Γöé
+Γöé openrouter-  Γöé er       Γöé          Γöé          Γöé OpenClaw OpenRouter provider plugin                      Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé OpenShell    Γöé openshel Γöé openclaw Γöé disabled Γöé stock:openshell/index.js                                 Γöé 2026.4.15 Γöé
+Γöé Sandbox      Γöé l        Γöé          Γöé          Γöé Sandbox backend powered by OpenShell with mirrored       Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé local workspaces and SSH-based command execution.        Γöé           Γöé
+Γöé @openclaw/   Γöé perplexi Γöé openclaw Γöé disabled Γöé stock:perplexity/index.js                                Γöé 2026.4.15 Γöé
+Γöé perplexity-  Γöé ty       Γöé          Γöé          Γöé OpenClaw Perplexity plugin                               Γöé           Γöé
+Γöé plugin       Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé Phone        Γöé phone-   Γöé openclaw Γöé loaded   Γöé stock:phone-control/index.js                             Γöé 2026.4.15 Γöé
+Γöé Control      Γöé control  Γöé          Γöé          Γöé Arm/disarm high-risk phone node commands (camera/screen/ Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé writes) with an optional auto-expiry.                    Γöé           Γöé
+Γöé @openclaw/   Γöé qianfan  Γöé openclaw Γöé loaded   Γöé stock:qianfan/index.js                                   Γöé 2026.4.15 Γöé
+Γöé qianfan-     Γöé          Γöé          Γöé          Γöé OpenClaw Qianfan provider plugin                         Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé qqbot    Γöé openclaw Γöé disabled Γöé stock:qqbot/index.js                                     Γöé 2026.4.15 Γöé
+Γöé qqbot        Γöé          Γöé          Γöé          Γöé OpenClaw QQ Bot channel plugin                           Γöé           Γöé
+Γöé @openclaw/   Γöé qwen     Γöé openclaw Γöé loaded   Γöé stock:qwen/index.js                                      Γöé 2026.4.15 Γöé
+Γöé qwen-        Γöé          Γöé          Γöé          Γöé OpenClaw Qwen Cloud provider plugin                      Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé runway   Γöé openclaw Γöé loaded   Γöé stock:runway/index.js                                    Γöé 2026.4.15 Γöé
+Γöé runway-      Γöé          Γöé          Γöé          Γöé OpenClaw Runway video provider plugin                    Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé searxng  Γöé openclaw Γöé disabled Γöé stock:searxng/index.js                                   Γöé 2026.4.15 Γöé
+Γöé searxng-     Γöé          Γöé          Γöé          Γöé OpenClaw SearXNG plugin                                  Γöé           Γöé
+Γöé plugin       Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé sglang   Γöé openclaw Γöé loaded   Γöé stock:sglang/index.js                                    Γöé 2026.4.15 Γöé
+Γöé sglang-      Γöé          Γöé          Γöé          Γöé OpenClaw SGLang provider plugin                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé signal   Γöé openclaw Γöé disabled Γöé stock:signal/index.js                                    Γöé 2026.4.15 Γöé
+Γöé signal       Γöé          Γöé          Γöé          Γöé OpenClaw Signal channel plugin                           Γöé           Γöé
+Γöé @openclaw/   Γöé slack    Γöé openclaw Γöé disabled Γöé stock:slack/index.js                                     Γöé 2026.4.15 Γöé
+Γöé slack        Γöé          Γöé          Γöé          Γöé OpenClaw Slack channel plugin                            Γöé           Γöé
+Γöé @openclaw/   Γöé stepfun  Γöé openclaw Γöé loaded   Γöé stock:stepfun/index.js                                   Γöé 2026.4.15 Γöé
+Γöé stepfun-     Γöé          Γöé          Γöé          Γöé OpenClaw StepFun provider plugin                         Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé synology Γöé openclaw Γöé disabled Γöé stock:synology-chat/index.js                             Γöé 2026.4.15 Γöé
+Γöé synology-    Γöé -chat    Γöé          Γöé          Γöé Synology Chat channel plugin for OpenClaw                Γöé           Γöé
+Γöé chat         Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé syntheti Γöé openclaw Γöé loaded   Γöé stock:synthetic/index.js                                 Γöé 2026.4.15 Γöé
+Γöé synthetic-   Γöé c        Γöé          Γöé          Γöé OpenClaw Synthetic provider plugin                       Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé Talk Voice   Γöé talk-    Γöé openclaw Γöé loaded   Γöé stock:talk-voice/index.js                                Γöé 2026.4.15 Γöé
+Γöé              Γöé voice    Γöé          Γöé          Γöé Manage Talk voice selection (list/set).                  Γöé           Γöé
+Γöé @openclaw/   Γöé tavily   Γöé openclaw Γöé disabled Γöé stock:tavily/index.js                                    Γöé 2026.4.15 Γöé
+Γöé tavily-      Γöé          Γöé          Γöé          Γöé OpenClaw Tavily plugin                                   Γöé           Γöé
+Γöé plugin       Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé telegram Γöé openclaw Γöé disabled Γöé stock:telegram/index.js                                  Γöé 2026.4.15 Γöé
+Γöé telegram     Γöé          Γöé          Γöé          Γöé OpenClaw Telegram channel plugin                         Γöé           Γöé
+Γöé Thread       Γöé thread-  Γöé openclaw Γöé disabled Γöé stock:thread-ownership/index.js                          Γöé 2026.4.15 Γöé
+Γöé Ownership    Γöé ownershi Γöé          Γöé          Γöé Prevents multiple agents from responding in the same     Γöé           Γöé
+Γöé              Γöé p        Γöé          Γöé          Γöé Slack thread. Uses HTTP calls to the slack-forwarder     Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé ownership API.                                           Γöé           Γöé
+Γöé @openclaw/   Γöé tlon     Γöé openclaw Γöé disabled Γöé stock:tlon/index.js                                      Γöé 2026.4.15 Γöé
+Γöé tlon         Γöé          Γöé          Γöé          Γöé OpenClaw Tlon/Urbit channel plugin                       Γöé           Γöé
+Γöé @openclaw/   Γöé together Γöé openclaw Γöé loaded   Γöé stock:together/index.js                                  Γöé 2026.4.15 Γöé
+Γöé together-    Γöé          Γöé          Γöé          Γöé OpenClaw Together provider plugin                        Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé twitch   Γöé openclaw Γöé disabled Γöé stock:twitch/index.js                                    Γöé 2026.4.15 Γöé
+Γöé twitch       Γöé          Γöé          Γöé          Γöé OpenClaw Twitch channel plugin                           Γöé           Γöé
+Γöé @openclaw/   Γöé venice   Γöé openclaw Γöé loaded   Γöé stock:venice/index.js                                    Γöé 2026.4.15 Γöé
+Γöé venice-      Γöé          Γöé          Γöé          Γöé OpenClaw Venice provider plugin                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé vercel-  Γöé openclaw Γöé loaded   Γöé stock:vercel-ai-gateway/index.js                         Γöé 2026.4.15 Γöé
+Γöé vercel-ai-   Γöé ai-      Γöé          Γöé          Γöé OpenClaw Vercel AI Gateway provider plugin               Γöé           Γöé
+Γöé gateway-     Γöé gateway  Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé vllm     Γöé openclaw Γöé loaded   Γöé stock:vllm/index.js                                      Γöé 2026.4.15 Γöé
+Γöé vllm-        Γöé          Γöé          Γöé          Γöé OpenClaw vLLM provider plugin                            Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé voice-   Γöé openclaw Γöé disabled Γöé stock:voice-call/index.js                                Γöé 2026.4.15 Γöé
+Γöé voice-call   Γöé call     Γöé          Γöé          Γöé OpenClaw voice-call plugin                               Γöé           Γöé
+Γöé @openclaw/   Γöé volcengi Γöé openclaw Γöé loaded   Γöé stock:volcengine/index.js                                Γöé 2026.4.15 Γöé
+Γöé volcengine-  Γöé ne       Γöé          Γöé          Γöé OpenClaw Volcengine provider plugin                      Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé vydra    Γöé openclaw Γöé loaded   Γöé stock:vydra/index.js                                     Γöé 2026.4.15 Γöé
+Γöé vydra-       Γöé          Γöé          Γöé          Γöé OpenClaw Vydra media provider plugin                     Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé Webhooks     Γöé webhooks Γöé openclaw Γöé disabled Γöé stock:webhooks/index.js                                  Γöé 2026.4.15 Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé Authenticated inbound webhooks that bind external        Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé automation to OpenClaw TaskFlows.                        Γöé           Γöé
+Γöé @openclaw/   Γöé whatsapp Γöé openclaw Γöé disabled Γöé stock:whatsapp/index.js                                  Γöé 2026.4.15 Γöé
+Γöé whatsapp     Γöé          Γöé          Γöé          Γöé OpenClaw WhatsApp channel plugin                         Γöé           Γöé
+Γöé @openclaw/   Γöé xai      Γöé openclaw Γöé loaded   Γöé stock:xai/index.js                                       Γöé 2026.4.15 Γöé
+Γöé xai-plugin   Γöé          Γöé          Γöé          Γöé OpenClaw xAI plugin                                      Γöé           Γöé
+Γöé @openclaw/   Γöé xiaomi   Γöé openclaw Γöé loaded   Γöé stock:xiaomi/index.js                                    Γöé 2026.4.15 Γöé
+Γöé xiaomi-      Γöé          Γöé          Γöé          Γöé OpenClaw Xiaomi provider plugin                          Γöé           Γöé
+Γöé provider     Γöé          Γöé          Γöé          Γöé                                                          Γöé           Γöé
+Γöé @openclaw/   Γöé zai      Γöé openclaw Γöé loaded   Γöé stock:zai/index.js                                       Γöé 2026.4.15 Γöé
+Γöé zai-provider Γöé          Γöé          Γöé          Γöé OpenClaw Z.AI provider plugin                            Γöé           Γöé
+Γöé @openclaw/   Γöé zalo     Γöé openclaw Γöé disabled Γöé stock:zalo/index.js                                      Γöé 2026.4.15 Γöé
+Γöé zalo         Γöé          Γöé          Γöé          Γöé OpenClaw Zalo channel plugin                             Γöé           Γöé
+Γöé @openclaw/   Γöé zalouser Γöé openclaw Γöé disabled Γöé stock:zalouser/index.js                                  Γöé 2026.4.15 Γöé
+Γöé zalouser     Γöé          Γöé          Γöé          Γöé OpenClaw Zalo Personal Account plugin via native zca-js  Γöé           Γöé
+Γöé              Γöé          Γöé          Γöé          Γöé integration                                              Γöé           Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ

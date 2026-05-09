@@ -1,0 +1,14 @@
+[
+  {
+    "conname": "media_library_business_id_fkey",
+    "pg_get_constraintdef": "FOREIGN KEY (business_id) REFERENCES business(business_id)"
+  },
+  {
+    "conname": "media_library_folder_check",
+    "pg_get_constraintdef": "CHECK (((folder)::text = ANY ((ARRAY['Homepage'::character varying, 'Brand'::character varying, 'Products'::character varying, 'Campaign'::character varying, 'Blog'::character varying])::text[])))"
+  },
+  {
+    "conname": "media_library_pkey",
+    "pg_get_constraintdef": "PRIMARY KEY (media_id)"
+  }
+]
