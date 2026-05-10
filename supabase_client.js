@@ -1,4 +1,5 @@
 // supabase_client.js — Supabase Storage & Database Client
+require('dotenv').config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
