@@ -3,18 +3,14 @@
 const express = require('express');
 const router  = express.Router();
 const auth    = require('../middleware/auth');
-const { createClient } = require('@supabase/supabase-js');
 
-function getSupabase() {
-    return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-}
 
 // GET /api/invoice/:order_id — Fetch all data for printing
 router.get('/:order_id', auth, async (req, res) => {
     try {
         const { order_id } = req.params;
         const business_id  = req.user.business_id;
-        const supabase     = getSupabase();
+        const supabase = require('../supabase_client');
 
         // 1. Fetch order
         const { data: orders, error: oErr } = await supabase

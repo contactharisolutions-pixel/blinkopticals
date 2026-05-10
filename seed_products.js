@@ -59,7 +59,7 @@ async function seed() {
         try {
             const query = `
                 INSERT INTO product (
-                    product_id, business_id, product_name, selling_price, mrp,
+                    product_id, business_id, product_name, base_price, mrp,
                     brand_id, category_id, gender_id, frame_type_id, shape_id,
                     main_image, description, active_status
                 ) VALUES (

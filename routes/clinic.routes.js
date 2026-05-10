@@ -220,8 +220,7 @@ router.patch('/appointments/:id/status', auth, async (req, res) => {
 router.get('/loyalty/kpis', auth, async (req, res) => {
     const business_id = req.user.business_id;
     try {
-        const { createClient } = require('@supabase/supabase-js');
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+                const supabase = require('../supabase_client');
 
         const { data: members } = await supabase.from('loyalty').select('tier,points').eq('business_id', business_id);
         const rows = members || [];
@@ -240,8 +239,7 @@ router.get('/loyalty/members', auth, async (req, res) => {
     const business_id = req.user.business_id;
 
     try {
-        const { createClient } = require('@supabase/supabase-js');
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+                const supabase = require('../supabase_client');
 
         // Fetch loyalty rows and customers in parallel — no JOIN needed
         const [{ data: loyaltyRows }, { data: customers }] = await Promise.all([
@@ -284,8 +282,7 @@ router.post('/loyalty/adjust', auth, async (req, res) => {
     if (!customer_id || points_change === undefined) return res.status(400).json({ success: false, error: 'Missing parameters' });
 
     try {
-        const { createClient } = require('@supabase/supabase-js');
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+                const supabase = require('../supabase_client');
 
         // 1. Find or create loyalty record
         let { data: existing } = await supabase.from('loyalty').select('loyalty_id,points').eq('customer_id', customer_id).eq('business_id', business_id).single();

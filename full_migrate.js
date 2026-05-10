@@ -1,5 +1,5 @@
 const { Client } = require('pg');
-require('dotenv').config({ path: '.env.development' });
+require('dotenv').config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');

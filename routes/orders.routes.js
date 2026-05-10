@@ -3,17 +3,15 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const rbac = require('../middleware/rbac');
-const { createClient } = require('@supabase/supabase-js');
 
-function getSupabase() {
-    return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-}
+
+
 
 // GET /api/orders — list orders for a business
 router.get('/', auth, async (req, res) => {
     const { order_type, order_status, payment_status, showroom_id, from_date, to_date, limit = 50, offset = 0 } = req.query;
     const biz = req.query.business_id || req.user.business_id;
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     try {
         // Fetch orders
         const { data: orders, error } = await supabase
@@ -57,7 +55,7 @@ router.get('/', auth, async (req, res) => {
 
 // GET /api/orders/:id — order detail with items and payments
 router.get('/:id', auth, async (req, res) => {
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     try {
         const { data: orders, error: oErr } = await supabase
             .from('customer_order').select('*').eq('order_id', req.params.id).limit(1);
@@ -117,7 +115,7 @@ router.post('/', auth, async (req, res) => {
     if (!items || !items.length)
         return res.status(400).json({ success: false, error: 'Order must have at least one item' });
 
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     const order_id = `ord_${Date.now()}`;
     const invoice_number = `INV-${Date.now()}`;
 
@@ -195,7 +193,7 @@ router.post('/', auth, async (req, res) => {
 // POST /api/orders/:id/payment — Record additional payment
 router.post('/:id/payment', auth, async (req, res) => {
     const { amount, payment_mode, business_id } = req.body;
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     try {
         await supabase.from('payment').insert({
             payment_id:   `pay_${Date.now()}`,
@@ -226,7 +224,7 @@ router.post('/:id/payment', auth, async (req, res) => {
 // PATCH /api/orders/:id — Update order status / notes
 router.patch('/:id', auth, async (req, res) => {
     const { order_status, notes } = req.body;
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     try {
         const update = {};
         if (order_status) update.order_status = order_status;
@@ -256,7 +254,7 @@ router.post('/pos-order', auth, async (req, res) => {
     if (!frame_product_id) return res.status(400).json({ success: false, error: 'Frame product is required' });
     if (!customer_id)      return res.status(400).json({ success: false, error: 'Customer is required for POS Order' });
 
-    const supabase    = getSupabase();
+    const supabase = require('../supabase_client');
     const order_id    = `ord_${Date.now()}`;
     const booking_no  = `BKG-${Date.now()}`;  // Booking number (not final invoice)
     const ts          = Date.now();
@@ -379,7 +377,7 @@ router.post('/pos-order', auth, async (req, res) => {
 // POST /api/orders/:id/deliver — Mark order delivered: record final payment + generate final invoice
 router.post('/:id/deliver', auth, async (req, res) => {
     const { final_amount_paid, payment_mode = 'Cash', business_id } = req.body;
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     const biz = business_id || req.user.business_id;
     try {
         // Fetch current order
@@ -430,7 +428,7 @@ router.post('/:id/deliver', auth, async (req, res) => {
 
 
 ('/:id', auth, async (req, res) => {
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     try {
         // 1. Get items to restore stock
         const { data: order } = await supabase.from('customer_order').select('showroom_id,business_id').eq('order_id', req.params.id).eq('business_id', req.user.business_id).limit(1);

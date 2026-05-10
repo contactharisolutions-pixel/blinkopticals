@@ -32,8 +32,7 @@ router.get('/leads', auth, async (req, res) => {
         }
 
         // Enrich with follow_up counts via Supabase directly (no proxy subquery needed)
-        const { createClient } = require('@supabase/supabase-js');
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+                const supabase = require('../supabase_client');
         const leadIds = leads.map(l => l.lead_id);
 
         let followUpMap = {};
@@ -71,8 +70,7 @@ router.get('/leads', auth, async (req, res) => {
 router.get('/kpis', auth, async (req, res) => {
     const business_id = req.query.business_id || req.user.business_id;
     try {
-        const { createClient } = require('@supabase/supabase-js');
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+                const supabase = require('../supabase_client');
 
         // Fetch all leads directly via Supabase — no proxy subquery issues
         const { data: allLeads } = await supabase.from('lead').select('lead_id,status,created_at').eq('business_id', business_id);

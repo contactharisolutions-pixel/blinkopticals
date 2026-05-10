@@ -2,7 +2,7 @@
  * BlinkOpticals — ERP Admin Seed Script
  * Creates the first admin user in the database
  */
-require('dotenv').config({ path: '.env.development' });
+require('dotenv').config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
 const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
 

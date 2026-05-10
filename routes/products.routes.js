@@ -26,8 +26,7 @@ const VARIANT_COLS = new Set(['color_code','size_code','color','size','sku','bar
 // GET /api/products/search — Fast Supabase stock search for POS Order picker
 // Query: ?business_id=&q=&showroom_id=&type=frame|lens&limit=15
 router.get('/search', async (req, res) => {
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        const supabase = require('../supabase_client');
     const { business_id, q = '', showroom_id, type, limit = 15 } = req.query;
     const biz = business_id || (req.user && req.user.business_id) || '';
     if (!biz) return res.status(400).json({ success: false, error: 'business_id required' });
@@ -179,8 +178,7 @@ router.post('/bulk-delete', auth, async (req, res) => {
 router.post('/bulk-validate', auth, upload.single('file'), async (req, res) => {
     try {
         const xlsx = require('xlsx');
-        const { createClient } = require('@supabase/supabase-js');
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+                const supabase = require('../supabase_client');
 
         const wb = xlsx.read(req.file.buffer, { type: 'buffer' });
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -247,8 +245,7 @@ router.post('/bulk-import-save', auth, async (req, res) => {
     const biz = req.user.business_id;
     if (!products || !products.length) return res.status(400).json({ success: false, error: 'No products' });
 
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        const supabase = require('../supabase_client');
 
     let imported = 0;
     const errors = [];
@@ -374,8 +371,7 @@ router.post('/quick-entry', auth, async (req, res) => {
 
     if (!brand_id || !model_no) return res.status(400).json({ success: false, error: 'Brand and Model No are required' });
 
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        const supabase = require('../supabase_client');
     const biz = req.user ? req.user.business_id : 'biz_blink_001';
 
     try {
@@ -468,8 +464,7 @@ router.post('/quick-entry', auth, async (req, res) => {
 
 // DELETE /api/products/variants/:id
 router.delete('/variants/:id', auth, async (req, res) => {
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        const supabase = require('../supabase_client');
     try {
         await supabase.from('inventory').delete().eq('variant_id', req.params.id);
         await supabase.from('variant').delete().eq('variant_id', req.params.id);
@@ -532,8 +527,7 @@ router.get('/', async (req, res) => {
 
 // GET /api/products/:id — full product with all variants and inventory
 router.get('/:id', async (req, res) => {
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        const supabase = require('../supabase_client');
     try {
         // Fetch product via proxy (gets enriched brand/category/etc names)
         const { rows } = await db.query(

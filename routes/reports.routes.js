@@ -5,11 +5,9 @@ const router  = express.Router();
 const db      = require('../db'); // kept for GST/financial endpoints that haven't been migrated yet
 const auth    = require('../middleware/auth');
 const rbac    = require('../middleware/rbac');
-const { createClient } = require('@supabase/supabase-js');
 
-function getSupabase() {
-    return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-}
+
+
 
 // JS-side groupBy aggregation helper
 function groupBy(arr, keyFn) {
@@ -27,7 +25,7 @@ router.get('/dashboard', auth, async (req, res) => {
     const business_id = req.query.business_id || req.user.business_id;
     const period      = req.query.period || 'Today';
     const showroom_id = req.query.showroom_id || '';
-    const supabase    = getSupabase();
+    const supabase = require('../supabase_client');
     try {
         // Date boundaries (JS-side)
         const now   = new Date();
@@ -99,7 +97,7 @@ router.get('/dashboard', auth, async (req, res) => {
 router.get('/dashboard-rich', auth, async (req, res) => {
     const business_id = req.query.business_id || req.user.business_id;
     const { category_id, gender_id, showroom_id } = req.query;
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
 
     try {
         // Fetch all base data in parallel
@@ -285,7 +283,7 @@ router.get('/sales', auth, rbac('Admin', 'Manager'), async (req, res) => {
 router.get('/analytics', auth, async (req, res) => {
     const { showroom_id, period, from_date, to_date } = req.query;
     const business_id = req.user.business_id;
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
 
     // Determine date window
     const now = new Date();

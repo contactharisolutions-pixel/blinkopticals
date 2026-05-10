@@ -2,11 +2,7 @@
 const express = require('express');
 const router  = express.Router();
 const xlsx    = require('xlsx');
-const { createClient } = require('@supabase/supabase-js');
 
-function getSupabase() {
-    return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-}
 
 // ── Health Check ──────────────────────────────────────────────────────
 router.get('/health', (req, res) => res.json({ status: 'ok' }));
@@ -34,7 +30,7 @@ router.get('/download-template', (req, res) => {
 // Fetches published + active products, enriched with brand/category/gender/type/shape/material
 // and the best active offer for each product — all via Supabase, no SQL proxy.
 router.get('/catalog-public', async (req, res) => {
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     try {
         // 1. Fetch published, active products with a selling price
         const { data: products, error: pErr } = await supabase
@@ -166,7 +162,7 @@ router.get('/catalog-public', async (req, res) => {
 
 // ── GET /api/public/coupons-public ───────────────────────────────────
 router.get('/coupons-public', async (req, res) => {
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     try {
         const today = new Date().toISOString().split('T')[0];
         const { data, error } = await supabase
@@ -186,7 +182,7 @@ router.get('/coupons-public', async (req, res) => {
 
 // ── GET /api/public/settings-public ──────────────────────────────────
 router.get('/settings-public', async (req, res) => {
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     try {
         const { data, error } = await supabase
             .from('business_settings')
@@ -215,7 +211,7 @@ const MASTER_TABLES = [
 
 MASTER_TABLES.forEach(({ route, table, cols }) => {
     router.get(`/${route}`, async (req, res) => {
-        const supabase = getSupabase();
+        const supabase = require('../supabase_client');
         try {
             const { data, error } = await supabase
                 .from(table)
@@ -234,7 +230,7 @@ MASTER_TABLES.forEach(({ route, table, cols }) => {
 
 // ── GET /api/public/cms/page/:slug ───────────────────────────────────
 router.get('/cms/page/:slug', async (req, res) => {
-    const supabase = getSupabase();
+    const supabase = require('../supabase_client');
     const { slug } = req.params;
     try {
         const { data: pages, error: pgErr } = await supabase

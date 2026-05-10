@@ -346,8 +346,7 @@ router.post('/analyze', auth, rbac('Admin', 'Manager'), upload.single('excel'), 
         const excelRows = rawRows.map(r => calibrateRow(r, finalMapping));
 
         // 2. Fetch unpublished products + master data via Supabase directly (no LATERAL JOIN)
-        const { createClient } = require('@supabase/supabase-js');
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+                const supabase = require('../supabase_client');
 
         const [
             { data: rawProducts },
@@ -617,8 +616,7 @@ router.post('/approve', auth, rbac('Admin', 'Manager'), async (req, res) => {
     let applied = 0, failed = 0, errors = [];
 
     // Use Supabase directly — db.pool doesn't exist on the proxy
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        const supabase = require('../supabase_client');
 
     for (const item of approvals) {
         try {
@@ -715,8 +713,7 @@ router.post('/reject', auth, rbac('Admin', 'Manager'), async (req, res) => {
 router.get('/logs', auth, rbac('Admin', 'Manager'), async (req, res) => {
     const biz = req.user.business_id;
     try {
-        const { createClient } = require('@supabase/supabase-js');
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+                const supabase = require('../supabase_client');
 
         const [{ data: logs }, { data: products }] = await Promise.all([
             supabase.from('ai_processing_log').select('*').eq('business_id', biz).order('processed_at', { ascending: false }).limit(200),
