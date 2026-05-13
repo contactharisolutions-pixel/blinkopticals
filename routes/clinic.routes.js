@@ -69,16 +69,126 @@ router.get('/eye-tests/kpis', auth, async (req, res) => {
 });
 
 router.post('/eye-tests', auth, async (req, res) => {
-    const { business_id, customer_id, doctor_name, right_sph, right_cyl, right_axis, right_add, left_sph, left_cyl, left_axis, left_add, pd, notes } = req.body;
+    const { 
+        business_id, customer_id, doctor_name, 
+        right_dv_sph, right_dv_cyl, right_dv_axis, right_dv_va, right_dv_add,
+        right_nv_sph, right_nv_cyl, right_nv_axis, right_nv_va,
+        left_dv_sph, left_dv_cyl, left_dv_axis, left_dv_va, left_dv_add,
+        left_nv_sph, left_nv_cyl, left_nv_axis, left_nv_va,
+        right_prism, right_pd, right_fh,
+        left_prism, left_pd, left_fh,
+        ipd, notes, prescription_for, test_id: req_test_id, test_date: req_test_date 
+    } = req.body;
+    
     if (!customer_id) return res.status(400).json({ success: false, error: 'customer_id required' });
-    const test_id = `et_${Date.now()}`;
+    const test_id = req_test_id || `RX-${Date.now().toString().slice(-6)}`;
+    const test_date = req_test_date || new Date().toISOString();
+    const pFor = prescription_for || 'Glasses';
+    
     try {
         await db.query(
-            `INSERT INTO eye_test (test_id, business_id, customer_id, test_date, doctor_name, right_sph, right_cyl, right_axis, right_add, left_sph, left_cyl, left_axis, left_add, pd, notes)
-             VALUES ($1,$2,$3,NOW(),$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-            [test_id, business_id, customer_id, doctor_name, right_sph, right_cyl, right_axis, right_add, left_sph, left_cyl, left_axis, left_add, pd, notes]
+            `INSERT INTO eye_test (
+                test_id, business_id, customer_id, test_date, doctor_name, 
+                right_dv_sph, right_dv_cyl, right_dv_axis, right_dv_va, right_dv_add,
+                right_nv_sph, right_nv_cyl, right_nv_axis, right_nv_va,
+                left_dv_sph, left_dv_cyl, left_dv_axis, left_dv_va, left_dv_add,
+                left_nv_sph, left_nv_cyl, left_nv_axis, left_nv_va,
+                right_prism, right_pd, right_fh,
+                left_prism, left_pd, left_fh,
+                ipd, notes, prescription_for
+            )
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32)`,
+            [
+                test_id, business_id, customer_id, test_date, doctor_name, 
+                right_dv_sph, right_dv_cyl, right_dv_axis, right_dv_va, right_dv_add,
+                right_nv_sph, right_nv_cyl, right_nv_axis, right_nv_va,
+                left_dv_sph, left_dv_cyl, left_dv_axis, left_dv_va, left_dv_add,
+                left_nv_sph, left_nv_cyl, left_nv_axis, left_nv_va,
+                right_prism, right_pd, right_fh,
+                left_prism, left_pd, left_fh,
+                ipd, notes, pFor
+            ]
         );
+
+        // Trigger automated real-time communication notification
+        setTimeout(async () => {
+            let custData = { name: doctor_name || 'Patient', mobile: '', email: '' };
+            if (customer_id) {
+                const { rows: cRes } = await db.query('SELECT name,mobile,email FROM customer WHERE customer_id = $1 LIMIT 1', [customer_id]);
+                if (cRes?.[0]) custData = cRes[0];
+            }
+            const comm = require('./communication.routes.js');
+            if (typeof comm.dispatchNotification === 'function') {
+                await comm.dispatchNotification(business_id, 'Prescription Ready', {
+                    ...custData,
+                    order_id: test_id,
+                    customer_id
+                });
+            }
+        }, 100);
+
         res.status(201).json({ success: true, test_id });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+router.get('/eye-tests/:id', auth, async (req, res) => {
+    try {
+        const { rows } = await db.query(
+            `SELECT et.*, c.name AS customer_name, c.mobile 
+             FROM "eye_test" et 
+             LEFT JOIN customer c ON et.customer_id = c.customer_id 
+             WHERE et.test_id = $1 AND et.business_id = $2`,
+            [req.params.id, req.user.business_id]
+        );
+        if (!rows.length) return res.status(404).json({ success: false, error: 'Record not found' });
+        res.json({ success: true, data: rows[0] });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+router.put('/eye-tests/:id', auth, async (req, res) => {
+    const { 
+        customer_id, doctor_name, 
+        right_dv_sph, right_dv_cyl, right_dv_axis, right_dv_va, right_dv_add,
+        right_nv_sph, right_nv_cyl, right_nv_axis, right_nv_va,
+        left_dv_sph, left_dv_cyl, left_dv_axis, left_dv_va, left_dv_add,
+        left_nv_sph, left_nv_cyl, left_nv_axis, left_nv_va,
+        right_prism, right_pd, right_fh,
+        left_prism, left_pd, left_fh,
+        ipd, notes, prescription_for, test_date 
+    } = req.body;
+
+    try {
+        await db.query(
+            `UPDATE eye_test SET 
+                customer_id = $1, test_date = $2, doctor_name = $3,
+                right_dv_sph = $4, right_dv_cyl = $5, right_dv_axis = $6, right_dv_va = $7, right_dv_add = $8,
+                right_nv_sph = $9, right_nv_cyl = $10, right_nv_axis = $11, right_nv_va = $12,
+                left_dv_sph = $13, left_dv_cyl = $14, left_dv_axis = $15, left_dv_va = $16, left_dv_add = $17,
+                left_nv_sph = $18, left_nv_cyl = $19, left_nv_axis = $20, left_nv_va = $21,
+                right_prism = $22, right_pd = $23, right_fh = $24,
+                left_prism = $25, left_pd = $26, left_fh = $27,
+                ipd = $28, notes = $29, prescription_for = $30
+             WHERE test_id = $31 AND business_id = $32`,
+            [
+                customer_id, test_date || new Date().toISOString(), doctor_name,
+                right_dv_sph, right_dv_cyl, right_dv_axis, right_dv_va, right_dv_add,
+                right_nv_sph, right_nv_cyl, right_nv_axis, right_nv_va,
+                left_dv_sph, left_dv_cyl, left_dv_axis, left_dv_va, left_dv_add,
+                left_nv_sph, left_nv_cyl, left_nv_axis, left_nv_va,
+                right_prism, right_pd, right_fh,
+                left_prism, left_pd, left_fh,
+                ipd, notes, prescription_for || 'Glasses',
+                req.params.id, req.user.business_id
+            ]
+        );
+        res.json({ success: true, message: 'Updated successfully' });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+router.delete('/eye-tests/:id', auth, async (req, res) => {
+    try {
+        await db.query(`DELETE FROM eye_test WHERE test_id = $1 AND business_id = $2`, [req.params.id, req.user.business_id]);
+        res.json({ success: true, message: 'Deleted successfully' });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
 
@@ -202,6 +312,24 @@ router.post('/appointments', auth, async (req, res) => {
              VALUES ($1,$2,$3,$4,$5,$6,$7,'Booked')`,
             [appointment_id, business_id || req.user.business_id, customer_id, showroom_id, appointment_date, appointment_type || 'Eye Test', notes]
         );
+
+        // Trigger automated real-time communication notification
+        setTimeout(async () => {
+            let custData = { name: 'Valued Patron', mobile: '', email: '' };
+            if (customer_id) {
+                const { rows: cRes } = await db.query('SELECT name,mobile,email FROM customer WHERE customer_id = $1 LIMIT 1', [customer_id]);
+                if (cRes?.[0]) custData = cRes[0];
+            }
+            const comm = require('./communication.routes.js');
+            if (typeof comm.dispatchNotification === 'function') {
+                await comm.dispatchNotification(business_id || 'DEFAULT_BIZ', 'Appointment Confirmed', {
+                    ...custData,
+                    order_id: appointment_id,
+                    customer_id
+                });
+            }
+        }, 100);
+
         res.status(201).json({ success: true, appointment_id });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });

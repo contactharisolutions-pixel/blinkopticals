@@ -38,7 +38,54 @@ router.get('/', auth, async (req, res) => {
         }));
 
         // JS-side filters
-        if (order_type)     rows = rows.filter(o => o.order_type     === order_type);
+        if (order_type === 'POS-ORDER') {
+            const { data: optItems } = await supabase.from('order_item').select('order_id, item_type, lens_type, product_id').in('item_type', ['frame', 'lens', 'contact_lens']);
+            const optOrderIds = new Set((optItems || []).map(i => i.order_id));
+            rows = rows.filter(o => optOrderIds.has(o.order_id) || (o.invoice_number && o.invoice_number.startsWith('BKG-')));
+
+            const pIds = [...new Set((optItems || []).map(i => i.product_id).filter(Boolean))];
+            let pMap = {};
+            if (pIds.length) {
+                const { data: pData } = await supabase.from('product').select('product_id, product_name').in('product_id', pIds);
+                pMap = Object.fromEntries((pData || []).map(p => [p.product_id, p.product_name]));
+            }
+
+            let itemGroups = {};
+            (optItems || []).forEach(it => {
+                if (!itemGroups[it.order_id]) itemGroups[it.order_id] = [];
+                itemGroups[it.order_id].push(it);
+            });
+
+            rows = rows.map(o => {
+                const myItems = itemGroups[o.order_id] || [];
+                let detailsArr = [];
+                const frameItem = myItems.find(i => i.item_type === 'frame');
+                const lensItem  = myItems.find(i => i.item_type === 'lens');
+                const clItem    = myItems.find(i => i.item_type === 'contact_lens');
+
+                if (clItem) {
+                    detailsArr.push(`🖲️ CL: ${pMap[clItem.product_id] || 'Contact Lens'}`);
+                } else {
+                    if (frameItem) detailsArr.push(`👓 Frame: ${pMap[frameItem.product_id] || 'Selected Frame'}`);
+                    if (lensItem)  detailsArr.push(`🔘 Lens: ${lensItem.lens_type || 'Custom Vision'}`);
+                }
+
+                let delDate = o.shipping_ref;
+                if (!delDate && o.created_at) {
+                    const d = new Date(o.created_at);
+                    d.setDate(d.getDate() + 5);
+                    delDate = d.toISOString().split('T')[0];
+                }
+
+                return {
+                    ...o,
+                    frame_details: detailsArr.join(' | ') || o.showroom_name,
+                    delivery_date: delDate
+                };
+            });
+        } else if (order_type) {
+            rows = rows.filter(o => o.order_type === order_type);
+        }
         if (order_status)   rows = rows.filter(o => o.order_status   === order_status);
         if (payment_status) rows = rows.filter(o => o.payment_status === payment_status);
         if (showroom_id)    rows = rows.filter(o => o.showroom_id    === showroom_id);
@@ -97,7 +144,25 @@ router.get('/:id', auth, async (req, res) => {
         // Fetch payments
         const { data: payments } = await supabase.from('payment').select('*').eq('order_id', req.params.id);
 
-        res.json({ success: true, data: { ...order, customer_name: customer.name || 'Walk-in', customer_mobile: customer.mobile || '', items: enrichedItems, payments: payments || [] } });
+        // Fetch prescription if present
+        let prescription = null;
+        const rxId = items.find(i => i.prescription_id)?.prescription_id;
+        if (rxId) {
+            const { data: rxData } = await supabase.from('prescription').select('*').eq('prescription_id', rxId).limit(1);
+            prescription = rxData?.[0] || null;
+        }
+
+        res.json({ 
+            success: true, 
+            data: { 
+                ...order, 
+                customer_name: customer.name || 'Walk-in', 
+                customer_mobile: customer.mobile || '', 
+                items: enrichedItems, 
+                payments: payments || [],
+                prescription
+            } 
+        });
     } catch (err) {
         console.error('[order detail error]', err.message);
         res.status(500).json({ success: false, error: 'Failed to fetch order' });
@@ -116,15 +181,46 @@ router.post('/', auth, async (req, res) => {
         return res.status(400).json({ success: false, error: 'Order must have at least one item' });
 
     const supabase = require('../supabase_client');
-    const order_id = `ord_${Date.now()}`;
-    const invoice_number = `INV-${Date.now()}`;
+    const biz = business_id || req.user?.business_id;
 
     try {
+        const { data: setts } = await supabase.from('business_settings').select('setting_value').eq('business_id', biz).eq('setting_key', 'prefix_rules');
+        const prefixRules = setts?.[0]?.setting_value || {};
+        
+        let prefix = 'INV';
+        if (order_type === 'POS' || !order_type) {
+            prefix = prefixRules?.showroom_rules?.[showroom_id]?.pos_prefix || prefixRules?.global_pos_prefix || 'POS';
+        } else if (order_type === 'ECOMMERCE') {
+            prefix = prefixRules?.showroom_rules?.[showroom_id]?.ecom_prefix || prefixRules?.global_ecom_prefix || 'ECOM';
+        }
+
+        const order_id = `ord_${Date.now()}`;
+        const invoice_number = `${prefix}-${Date.now()}`;
+        
+        // 1. Fetch GST rates for all items to ensure accurate tax calculation
+        const productIds = [...new Set(items.map(i => i.product_id))];
+        const { data: taxData } = await supabase
+            .from('product')
+            .select('product_id, gst_rate, categories(gst_rate)')
+            .in('product_id', productIds);
+        
+        const taxMap = {};
+        (taxData || []).forEach(p => {
+            taxMap[p.product_id] = p.gst_rate || p.categories?.gst_rate || 12;
+        });
+
         const calculatedSubtotal = Math.round(items.reduce((sum, item) => sum + (parseFloat(item.unit_price) * parseInt(item.quantity)), 0));
         const subtotal    = passedSubtotal !== undefined ? passedSubtotal : calculatedSubtotal;
         const netAmount   = Math.round(subtotal - parseFloat(discount_amount || 0));
-        const taxRate     = 18; // Default; can be fetched from tax_rules if needed
-        const calculatedTax = Math.round(netAmount - (netAmount / (1 + taxRate / 100)));
+        
+        // 2. Calculate tax based on individual item rates
+        let calculatedTax = 0;
+        items.forEach(item => {
+            const rate = taxMap[item.product_id] || 12;
+            const itemNet = (parseFloat(item.unit_price) * parseInt(item.quantity)) - (parseFloat(item.discount || 0));
+            calculatedTax += Math.round(itemNet - (itemNet / (1 + rate / 100)));
+        });
+
         const tax_amount  = passedTax !== undefined ? passedTax : calculatedTax;
         const total_amount = passedTotal !== undefined ? passedTotal : netAmount;
         const balance_amount = Math.round(total_amount - parseFloat(amount_paid || 0));
@@ -183,6 +279,25 @@ router.post('/', auth, async (req, res) => {
             });
         }
 
+        // 4. Auto send WhatsApp/Email transactional alert via Communication Hub
+        setTimeout(async () => {
+            let custData = { name: 'Customer', mobile: '', email: '' };
+            if (customer_id) {
+                const { data: cRes } = await supabase.from('customer').select('name,mobile,email').eq('customer_id', customer_id).limit(1);
+                if (cRes?.[0]) custData = cRes[0];
+            }
+            const comm = require('./communication.routes.js');
+            if (typeof comm.dispatchNotification === 'function') {
+                await comm.dispatchNotification(biz, 'Order Confirmation', {
+                    ...custData,
+                    order_id,
+                    total_amount,
+                    balance_amount,
+                    customer_id
+                });
+            }
+        }, 100);
+
         res.status(201).json({ success: true, order_id, invoice_number, total_amount, balance_amount });
     } catch (err) {
         console.error('[create order error]', err.message);
@@ -214,6 +329,27 @@ router.post('/:id/payment', auth, async (req, res) => {
                 payment_status: newBalance <= 0 ? 'paid' : 'partial'
             }).eq('order_id', req.params.id);
         }
+
+        // Auto send WhatsApp/Email transactional alert via Communication Hub
+        setTimeout(async () => {
+            const { data: oRes } = await supabase.from('customer_order').select('customer_id,balance_amount').eq('order_id', req.params.id).limit(1);
+            let custData = { name: 'Customer', mobile: '', email: '' };
+            if (oRes?.[0]?.customer_id) {
+                const { data: cRes } = await supabase.from('customer').select('name,mobile,email').eq('customer_id', oRes[0].customer_id).limit(1);
+                if (cRes?.[0]) custData = cRes[0];
+            }
+            const comm = require('./communication.routes.js');
+            if (typeof comm.dispatchNotification === 'function') {
+                await comm.dispatchNotification(business_id, 'Payment Successful', {
+                    ...custData,
+                    order_id: req.params.id,
+                    amount_paid: amount,
+                    balance_amount: oRes?.[0]?.balance_amount || 0,
+                    customer_id: oRes?.[0]?.customer_id
+                });
+            }
+        }, 100);
+
         res.json({ success: true });
     } catch (err) {
         console.error('[payment record error]', err.message);
@@ -245,14 +381,21 @@ router.post('/pos-order', auth, async (req, res) => {
         business_id, customer_id, showroom_id,
         frame_product_id, frame_variant_id, frame_price, frame_mrp,
         lens_type, lens_price = 0,
-        right_sph, right_cyl, right_axis, right_add,
-        left_sph, left_cyl, left_axis, left_add, pd, notes,
+        right_dv_sph, right_dv_cyl, right_dv_axis, right_dv_va, right_dv_add,
+        right_nv_sph, right_nv_cyl, right_nv_axis, right_nv_va,
+        left_dv_sph, left_dv_cyl, left_dv_axis, left_dv_va, left_dv_add,
+        left_nv_sph, left_nv_cyl, left_nv_axis, left_nv_va,
+        right_prism, right_pd, right_fh,
+        left_prism, left_pd, left_fh,
+        ipd, notes,
         advance_amount = 0, payment_mode = 'Cash',
-        delivery_date
+        delivery_date, order_for = 'Glasses'
     } = req.body;
 
-    if (!frame_product_id) return res.status(400).json({ success: false, error: 'Frame product is required' });
-    if (!customer_id)      return res.status(400).json({ success: false, error: 'Customer is required for POS Order' });
+    if (order_for === 'Glasses' && !frame_product_id) {
+        return res.status(400).json({ success: false, error: 'Frame product is required for Glasses order' });
+    }
+    if (!customer_id) return res.status(400).json({ success: false, error: 'Customer is required for POS Order' });
 
     const supabase = require('../supabase_client');
     const order_id    = `ord_${Date.now()}`;
@@ -266,27 +409,52 @@ router.post('/pos-order', auth, async (req, res) => {
             prescription_id,
             business_id,
             customer_id,
-            right_sph:  right_sph  || null,
-            right_cyl:  right_cyl  || null,
-            right_axis: right_axis ? parseInt(right_axis) : null,
-            right_add:  right_add  || null,
-            left_sph:   left_sph   || null,
-            left_cyl:   left_cyl   || null,
-            left_axis:  left_axis  ? parseInt(left_axis) : null,
-            left_add:   left_add   || null,
-            pd:         pd         || null,
-            notes:      notes      || null
+            prescription_for: order_for || 'Glasses',
+            right_dv_sph: right_dv_sph || null,
+            right_dv_cyl: right_dv_cyl || null,
+            right_dv_axis: right_dv_axis || null,
+            right_dv_va: right_dv_va || null,
+            right_dv_add: right_dv_add || null,
+            right_nv_sph: right_nv_sph || null,
+            right_nv_cyl: right_nv_cyl || null,
+            right_nv_axis: right_nv_axis || null,
+            right_nv_va: right_nv_va || null,
+            left_dv_sph: left_dv_sph || null,
+            left_dv_cyl: left_dv_cyl || null,
+            left_dv_axis: left_dv_axis || null,
+            left_dv_va: left_dv_va || null,
+            left_dv_add: left_dv_add || null,
+            left_nv_sph: left_nv_sph || null,
+            left_nv_cyl: left_nv_cyl || null,
+            left_nv_axis: left_nv_axis || null,
+            left_nv_va: left_nv_va || null,
+            right_prism: right_prism || null,
+            right_pd: right_pd || null,
+            right_fh: right_fh || null,
+            left_prism: left_prism || null,
+            left_pd: left_pd || null,
+            left_fh: left_fh || null,
+            ipd: ipd || null,
+            notes: notes || null
         });
         if (rxErr) console.error('[prescription insert]', rxErr.message); // Non-fatal
 
-        // 2. Calculate totals
-        const frameMrp    = parseFloat(frame_mrp   || frame_price || 0);
-        const framePrice  = parseFloat(frame_price || 0);
+        // 2. Calculate totals with dynamic GST rate
+        let taxRate = 12;
+        const eff_pid = order_for === 'Contact Lens' ? frame_product_id : (frame_product_id || `custom_${ts}`);
+        if (eff_pid && !eff_pid.startsWith('custom_') && !eff_pid.startsWith('cl_')) {
+            const { data: frameData } = await supabase.from('product').select('gst_rate, categories(gst_rate)').eq('product_id', eff_pid).single();
+            if (frameData) {
+                taxRate = frameData.gst_rate || frameData.categories?.gst_rate || 12;
+            }
+        }
+
+        const frameMrp    = order_for === 'Contact Lens' ? 0 : parseFloat(frame_mrp   || frame_price || 0);
+        const framePrice  = order_for === 'Contact Lens' ? 0 : parseFloat(frame_price || 0);
         const lensAmount  = parseFloat(lens_price   || 0);
-        const subtotal    = frameMrp + lensAmount;
-        const discount    = Math.max(0, frameMrp - framePrice);
+        const subtotal    = order_for === 'Contact Lens' ? lensAmount : (frameMrp + lensAmount);
+        const discount    = order_for === 'Contact Lens' ? 0 : Math.max(0, frameMrp - framePrice);
         const netAmount   = subtotal - discount;
-        const taxRate     = 18;
         const tax_amount  = Math.round(netAmount - (netAmount / (1 + taxRate / 100)));
         const total_amount = Math.round(netAmount);
         const adv         = parseFloat(advance_amount || 0);
@@ -299,7 +467,7 @@ router.post('/pos-order', auth, async (req, res) => {
             business_id,
             customer_id,
             showroom_id:    showroom_id || null,
-            order_type:     'POS-ORDER',    // distinct from POS direct
+            order_type:     'POS',    // Must match database check constraint
             subtotal,
             discount_amount: discount,
             tax_amount,
@@ -309,35 +477,51 @@ router.post('/pos-order', auth, async (req, res) => {
             payment_status,
             order_status:   'Processing',  // Frame+lens being prepared
             invoice_number: booking_no,    // Booking # only; final INV generated on delivery
-            delivery_date:  delivery_date || null
+            shipping_ref:   delivery_date || null
         });
         if (oErr) throw new Error('Order insert: ' + oErr.message);
 
-        // 4. Insert frame item
-        const frame_item_id = `item_${ts}_frame`;
+        // 4. Insert items
         const v_id = (frame_variant_id && frame_variant_id !== 'null') ? frame_variant_id : null;
-        await supabase.from('order_item').insert({
-            item_id:         frame_item_id,
-            order_id,
-            product_id:      frame_product_id,
-            variant_id:      v_id,
-            item_type:       'frame',
-            lens_type:       lens_type || null,
-            prescription_id: rxErr ? null : prescription_id,
-            quantity:        1,
-            unit_price:      frameMrp,
-            discount:        discount,
-            total_price:     framePrice
-        });
-
-        // 5. Insert lens line item (if price given)
-        if (lensAmount > 0) {
+        
+        if (order_for === 'Glasses') {
             await supabase.from('order_item').insert({
-                item_id:         `item_${ts}_lens`,
+                item_id:         `item_${ts}_frame`,
                 order_id,
-                product_id:      frame_product_id, // linked to same frame for report grouping
-                item_type:       'lens',
-                lens_type:       lens_type || 'Single Vision',
+                product_id:      eff_pid,
+                variant_id:      v_id,
+                item_type:       'frame',
+                lens_type:       lens_type || null,
+                prescription_id: rxErr ? null : prescription_id,
+                quantity:        1,
+                unit_price:      frameMrp,
+                discount:        discount,
+                total_price:     framePrice
+            });
+
+            if (lensAmount > 0) {
+                await supabase.from('order_item').insert({
+                    item_id:         `item_${ts}_lens`,
+                    order_id,
+                    product_id:      eff_pid, // linked to same frame for report grouping
+                    item_type:       'lens',
+                    lens_type:       lens_type || 'Single Vision',
+                    prescription_id: rxErr ? null : prescription_id,
+                    quantity:        1,
+                    unit_price:      lensAmount,
+                    discount:        0,
+                    total_price:     lensAmount
+                });
+            }
+        } else {
+            // Contact Lens order
+            await supabase.from('order_item').insert({
+                item_id:         `item_${ts}_cl`,
+                order_id,
+                product_id:      eff_pid || `cl_${ts}`,
+                variant_id:      v_id,
+                item_type:       'contact_lens',
+                lens_type:       lens_type || 'Contact Lens',
                 prescription_id: rxErr ? null : prescription_id,
                 quantity:        1,
                 unit_price:      lensAmount,
@@ -346,7 +530,18 @@ router.post('/pos-order', auth, async (req, res) => {
             });
         }
 
-        // 6. Record advance payment
+        // 6. Deduct Inventory (Critical for stock accuracy)
+        if (v_id && showroom_id) {
+            const { data: inv } = await supabase.from('inventory')
+                .select('inventory_id,available_qty').eq('variant_id', v_id).eq('showroom_id', showroom_id).limit(1);
+            if (inv?.[0]) {
+                await supabase.from('inventory').update({
+                    available_qty: Math.max(0, inv[0].available_qty - 1)
+                }).eq('inventory_id', inv[0].inventory_id);
+            }
+        }
+
+        // 7. Record advance payment
         if (adv > 0) {
             await supabase.from('payment').insert({
                 payment_id:   `pay_${ts}`,
@@ -374,6 +569,116 @@ router.post('/pos-order', auth, async (req, res) => {
     }
 });
 
+// PATCH /api/orders/:id/update-details — Edit order details, prices, delivery date, and prescription
+router.patch('/:id/update-details', auth, async (req, res) => {
+    const supabase = require('../supabase_client');
+    const {
+        frame_price, lens_price, delivery_date, notes,
+        right_dv_sph, right_dv_cyl, right_dv_axis, right_dv_va, right_dv_add,
+        right_nv_sph, right_nv_cyl, right_nv_axis, right_nv_va,
+        left_dv_sph, left_dv_cyl, left_dv_axis, left_dv_va, left_dv_add,
+        left_nv_sph, left_nv_cyl, left_nv_axis, left_nv_va,
+        right_prism, right_pd, right_fh, left_prism, left_pd, left_fh, ipd
+    } = req.body;
+
+    try {
+        // Fetch current order
+        const { data: ord } = await supabase.from('customer_order').select('*').eq('order_id', req.params.id).limit(1);
+        if (!ord?.[0]) return res.status(404).json({ success: false, error: 'Order not found' });
+        const order = ord[0];
+
+        const fPrice = parseFloat(frame_price || 0);
+        const lPrice = parseFloat(lens_price || 0);
+        const newTotal = fPrice + lPrice;
+        const paid = parseFloat(order.total_paid || 0);
+        const newBalance = Math.max(0, newTotal - paid);
+        const pyStatus = paid >= newTotal ? 'paid' : paid > 0 ? 'partial' : 'pending';
+
+        // Update customer_order table
+        await supabase.from('customer_order').update({
+            total_amount:   newTotal,
+            subtotal:       newTotal,
+            balance_amount: newBalance,
+            payment_status: pyStatus,
+            shipping_ref:   delivery_date || null
+        }).eq('order_id', req.params.id);
+
+        // Update item prices
+        const { data: items } = await supabase.from('order_item').select('*').eq('order_id', req.params.id);
+        let rxId = null;
+        for (const it of (items || [])) {
+            if (it.prescription_id) rxId = it.prescription_id;
+            if (it.item_type === 'frame' || it.item_type === 'contact_lens') {
+                await supabase.from('order_item').update({ unit_price: fPrice, total_price: fPrice }).eq('item_id', it.item_id);
+            } else if (it.item_type === 'lens') {
+                await supabase.from('order_item').update({ unit_price: lPrice, total_price: lPrice }).eq('item_id', it.item_id);
+            }
+        }
+
+        // Update prescription
+        if (rxId) {
+            await supabase.from('prescription').update({
+                right_dv_sph: right_dv_sph || null, right_dv_cyl: right_dv_cyl || null, right_dv_axis: right_dv_axis || null, right_dv_va: right_dv_va || null, right_dv_add: right_dv_add || null,
+                right_nv_sph: right_nv_sph || null, right_nv_cyl: right_nv_cyl || null, right_nv_axis: right_nv_axis || null, right_nv_va: right_nv_va || null,
+                left_dv_sph: left_dv_sph || null, left_dv_cyl: left_dv_cyl || null, left_dv_axis: left_dv_axis || null, left_dv_va: left_dv_va || null, left_dv_add: left_dv_add || null,
+                left_nv_sph: left_nv_sph || null, left_nv_cyl: left_nv_cyl || null, left_nv_axis: left_nv_axis || null, left_nv_va: left_nv_va || null,
+                right_prism: right_prism || null, right_pd: right_pd || null, right_fh: right_fh || null,
+                left_prism: left_prism || null, left_pd: left_pd || null, left_fh: left_fh || null,
+                ipd: ipd || null, notes: notes || null
+            }).eq('prescription_id', rxId);
+        }
+
+        res.json({ success: true, message: 'Order details updated successfully' });
+    } catch (err) {
+        console.error('[edit order error]', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// POST /api/orders/:id/cancel — Cancel order with reason and refund
+router.post('/:id/cancel', auth, async (req, res) => {
+    const supabase = require('../supabase_client');
+    const { cancel_reason, refund_amount, payment_mode = 'Cash' } = req.body;
+    try {
+        const { data: ord } = await supabase.from('customer_order').select('*').eq('order_id', req.params.id).limit(1);
+        if (!ord?.[0]) return res.status(404).json({ success: false, error: 'Order not found' });
+        const order = ord[0];
+
+        const rAmt = parseFloat(refund_amount || 0);
+        if (rAmt > 0) {
+            await supabase.from('payment').insert({
+                payment_id:   `refund_${Date.now()}`,
+                order_id:     req.params.id,
+                business_id:  order.business_id,
+                amount:       -rAmt,
+                payment_mode: payment_mode,
+                status:       'refunded',
+                notes:        `Refund: ${cancel_reason || 'Order Canceled'}`
+            });
+        }
+
+        await supabase.from('customer_order').update({
+            order_status: 'Canceled',
+            balance_amount: 0
+        }).eq('order_id', req.params.id);
+
+        const { data: items } = await supabase.from('order_item').select('variant_id,quantity').eq('order_id', req.params.id);
+        for (const item of (items || [])) {
+            if (item.variant_id && order.showroom_id) {
+                const { data: inv } = await supabase.from('inventory').select('inventory_id,available_qty').eq('variant_id', item.variant_id).eq('showroom_id', order.showroom_id).limit(1);
+                if (inv?.[0]) {
+                    await supabase.from('inventory').update({ available_qty: inv[0].available_qty + parseInt(item.quantity) }).eq('inventory_id', inv[0].inventory_id);
+                }
+            }
+        }
+
+        res.json({ success: true, message: 'Order canceled and refunded successfully' });
+    } catch (err) {
+        console.error('[cancel order error]', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // POST /api/orders/:id/deliver — Mark order delivered: record final payment + generate final invoice
 router.post('/:id/deliver', auth, async (req, res) => {
     const { final_amount_paid, payment_mode = 'Cash', business_id } = req.body;
@@ -389,7 +694,12 @@ router.post('/:id/deliver', auth, async (req, res) => {
         const newPaid    = parseFloat(order.total_paid  || 0) + finalPmt;
         const newBalance = Math.max(0, parseFloat(order.total_amount) - newPaid);
         const pyStatus   = newBalance <= 0 ? 'paid' : 'partial';
-        const final_invoice = `INV-${Date.now()}`;  // Real invoice on delivery
+
+        const { data: setts } = await supabase.from('business_settings').select('setting_value').eq('business_id', biz).eq('setting_key', 'prefix_rules');
+        const prefixRules = setts?.[0]?.setting_value || {};
+        const prefix = prefixRules?.showroom_rules?.[order.showroom_id]?.pos_prefix || prefixRules?.global_pos_prefix || 'POS';
+        
+        const final_invoice = `${prefix}-${Date.now()}`;  // Real invoice on delivery
 
         // Record final payment
         if (finalPmt > 0) {
@@ -404,9 +714,9 @@ router.post('/:id/deliver', auth, async (req, res) => {
             });
         }
 
-        // Update order to Completed
+        // Update order to Delivered
         await supabase.from('customer_order').update({
-            order_status:   'Completed',
+            order_status:   'Delivered',
             payment_status: pyStatus,
             total_paid:     newPaid,
             balance_amount: newBalance,
@@ -427,7 +737,8 @@ router.post('/:id/deliver', auth, async (req, res) => {
 });
 
 
-('/:id', auth, async (req, res) => {
+// DELETE /api/orders/:id — Delete order and restore stock
+router.delete('/:id', auth, async (req, res) => {
     const supabase = require('../supabase_client');
     try {
         // 1. Get items to restore stock

@@ -11,28 +11,92 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // IMMEDIATE ADMIN DETECTION (Prevents Flash)
+        if (window.location.pathname.startsWith('/admin') || window.location.hash.startsWith('#/admin')) {
+            document.documentElement.classList.add('admin-mode');
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.classList.add('admin-mode');
+            });
+        }
+    </script>
 </head>
 <body>
+    <div id="root"></div>
+    <style>
+        html.admin-mode #coming-soon-page,
+        body.admin-mode #coming-soon-page,
+        html.admin-mode .top-bar,
+        body.admin-mode .top-bar,
+        html.admin-mode #cookie-banner,
+        body.admin-mode #cookie-banner,
+        html.admin-mode .store-nav,
+        body.admin-mode .store-nav,
+        html.admin-mode .newsletter-section,
+        body.admin-mode .newsletter-section,
+        html.admin-mode .footer,
+        body.admin-mode .footer,
+        html.admin-mode .mega-menu-overlay,
+        body.admin-mode .mega-menu-overlay,
+        html.admin-mode #mobile-menu-drawer,
+        body.admin-mode #mobile-menu-drawer,
+        html.admin-mode #cart-sidebar,
+        body.admin-mode #cart-sidebar,
+        html.admin-mode #cart-overlay,
+        body.admin-mode #cart-overlay,
+        html.admin-mode #store-app,
+        body.admin-mode #store-app,
+        html.admin-mode .vto-overlay,
+        body.admin-mode .vto-overlay,
+        html.admin-mode #auth-overlay,
+        body.admin-mode #auth-overlay,
+        html.admin-mode #auth-modal-popup,
+        body.admin-mode #auth-modal-popup {
+            display: none !important;
+        }
+    </style>
     <!-- BEAUTIFUL COMING SOON PAGE -->
     <div id="coming-soon-page">
         <div class="cs-background"></div>
         <div class="vision-flare" style="top: -100px; left: -100px;"></div>
         <div class="vision-flare" style="bottom: -100px; right: -100px;"></div>
         
-        <div class="cs-content">
-            <img src="/admin/img/logo.png" alt="Blink Opticals" class="cs-logo">
-            <h1 class="cs-title">Visionary Clarity <br>Coming Soon</h1>
-            <p class="cs-subtitle">We are crafting a new perspective in premium eyewear. <br>Our digital boutique is opening its doors very soon.</p>
-            
-            <div class="cs-form">
-                <input type="email" placeholder="Enter your email for early access" class="cs-input">
-                <button class="cs-btn">Notify Me</button>
+        <div class="cs-content-wrapper">
+            <div class="cs-left">
+                <img src="/public/img/logo-new.png" alt="Blink Opticals" class="cs-logo">
+                <h1 class="cs-title">Visionary Clarity <br>In Every Frame</h1>
+                <p class="cs-subtitle">We are redefining premium eyewear with next-generation AI and omni-channel experiences. Opening our digital doors soon.</p>
+                
+                <div class="cs-form">
+                    <input type="email" placeholder="Enter email for early access" class="cs-input">
+                    <button class="cs-btn">Notify Me</button>
+                </div>
             </div>
-            
-            <div style="margin-top: 40px; display: flex; justify-content: center; gap: 30px; opacity: 0.6;">
-                <i class="fas fa-glasses fa-2x"></i>
-                <i class="fas fa-eye fa-2x"></i>
-                <i class="fas fa-microscope fa-2x"></i>
+
+            <div class="cs-right">
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-magic"></i></div>
+                        <h3>AI Data Filler</h3>
+                        <p>Automated product cataloging with high-precision attribute mapping.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-sync"></i></div>
+                        <h3>Omni-channel</h3>
+                        <p>Real-time sync across retail stores and digital storefronts.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-user-check"></i></div>
+                        <h3>Customer Profiles</h3>
+                        <p>360° view of prescription history and style preferences.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                        <h3>Predictive Analytics</h3>
+                        <p>Sales forecasting and inventory optimization powered by AI.</p>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -40,9 +104,8 @@
             &copy; 2026 Blink Opticals &bull; Defined by Precision &bull; Surat
         </div>
         
-        <!-- DISMISS FOR DEVELOPMENT (Remove for production) -->
         <button onclick="document.getElementById('coming-soon-page').style.display='none'" 
-                style="position:fixed; bottom:20px; right:20px; background:none; border:none; color:rgba(255,255,255,0.2); cursor:pointer; font-size:0.7rem; z-index:100;">
+                style="position:fixed; bottom:20px; right:20px; background:none; border:none; color:rgba(255,255,255,0.2); cursor:pointer; font-size:0.7rem; z-index:1000001;">
             [ Dismiss Preview ]
         </button>
     </div>
@@ -274,74 +337,77 @@
 
     <!-- ROBUST FOOTER -->
     <footer class="footer" style="background:#fff; color:#333; padding:60px 4% 40px; width:100%; box-sizing:border-box; border-top: 1px solid #eee;">
-        <div style="display:grid; grid-template-columns: 1.4fr 1.4fr 1fr 1fr 1fr; gap:50px; margin-bottom:60px; width:100%; align-items: start;">
-            <!-- STORE 1 -->
-            <div>
-                <img src="/admin/img/logo.png" style="height:42px; margin-bottom:30px; display:block;">
-                <h4 style="margin:0 0 15px 0; font-size:1.1rem; color:#111; font-weight:700;">Blink Opticals (Citylight Store)</h4>
-                <p style="margin:0; color:#777; font-size:0.95rem; line-height:1.8;">Shop No : 323 to 328, Citylight Shopping Centre, Opp. Indraprasth Appt.,<br>Citylight Main Road, Surat – 395007</p>
-                <div style="margin-top:25px; color:#777; font-size:0.95rem; line-height:1.8;">
-                    <span style="display:block;"><strong style="color:#111; font-weight:700;">Store Contacts:</strong> +91 88662 22 777 | +91 81407 43000</span>
-                    <span style="display:block;"><strong style="color:#111; font-weight:700;">E-mail:</strong> contact@blinkopticals.com</span>
+        <div style="display:flex; flex-direction:column; gap:50px; margin-bottom:60px; width:100%;">
+            <!-- DYNAMIC SHOWROOMS ROW -->
+            <div id="dynamic-footer-showrooms" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:40px; border-bottom: 1px solid #f5f5f5; padding-bottom: 50px;">
+                <!-- STORE 1 DEFAULT -->
+                <div class="showroom-footer-card">
+                    <img src="/admin/img/logo.png" style="height:42px; margin-bottom:25px; display:block;">
+                    <h4 style="margin:0 0 12px 0; font-size:1.1rem; color:#111; font-weight:700;">Blink Opticals (Citylight Store)</h4>
+                    <p style="margin:0; color:#777; font-size:0.95rem; line-height:1.8;">Shop No : 323 to 328, Citylight Shopping Centre, Opp. Indraprasth Appt.,<br>Citylight Main Road, Surat – 395007</p>
+                    <div style="margin-top:20px; color:#777; font-size:0.95rem; line-height:1.8;">
+                        <span style="display:block;"><strong style="color:#111; font-weight:700;">Store Contacts:</strong> +91 88662 22 777 | +91 81407 43000</span>
+                        <span style="display:block;"><strong style="color:#111; font-weight:700;">E-mail:</strong> contact@blinkopticals.com</span>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <a href="https://maps.google.com" target="_blank" style="color:#777; text-decoration:none; font-size:0.95rem; display:flex; align-items:center; gap:10px; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">
+                            <i class="fas fa-map-marker-alt" style="font-size:1.2rem; color:var(--accent);"></i> Open in Google Maps
+                        </a>
+                    </div>
                 </div>
-                <div style="margin-top:20px;">
-                    <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:0.95rem; display:flex; align-items:center; gap:10px; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">
-                        <i class="fas fa-map-marker-alt" style="font-size:1.2rem; opacity:0.5;"></i> Tap for Google Map
-                    </a>
-                </div>
-            </div>
-            
-            <!-- STORE 2 -->
-            <div>
-                <div style="height:42px; margin-bottom:30px;"></div> <!-- Spacer -->
-                <h4 style="margin:0 0 15px 0; font-size:1.1rem; color:#111; font-weight:700;">Blink Opticals (Ghod dod Store)</h4>
-                <p style="margin:0; color:#777; font-size:0.95rem; line-height:1.8;">UG 16, Bhavik Complex, Beside Panjra Pol,<br>Ghod dod Road, Surat – 395001</p>
-                <div style="margin-top:25px; color:#777; font-size:0.95rem; line-height:1.8;">
-                    <span style="display:block;"><strong style="color:#111; font-weight:700;">Store Contacts:</strong> +91 89089 99099 | +91 9925 339000</span>
-                    <span style="display:block;"><strong style="color:#111; font-weight:700;">E-mail:</strong> contact@blinkopticals.com</span>
-                </div>
-                <div style="margin-top:20px;">
-                    <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:0.95rem; display:flex; align-items:center; gap:10px; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">
-                        <i class="fas fa-map-marker-alt" style="font-size:1.2rem; opacity:0.5;"></i> Tap for Google Map
-                    </a>
-                </div>
-            </div>
-            
-            <!-- LINK COL 1 -->
-            <div>
-                <div style="height:42px; margin-bottom:30px;"></div> <!-- Spacer -->
-                <h4 style="margin:0 0 25px 0; font-size:1.1rem; color:#111; font-weight:700;">About Us</h4>
-                <div style="display:flex; flex-direction:column; gap:15px;">
-                    <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">About Us</a>
-                    <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Contact Us</a>
-                    <a href="#/account" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Track Shipment</a>
-                    <a href="#/account" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Your Account</a>
-                    <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Blogs</a>
+                
+                <!-- STORE 2 DEFAULT -->
+                <div class="showroom-footer-card">
+                    <div style="height:42px; margin-bottom:25px;"></div>
+                    <h4 style="margin:0 0 12px 0; font-size:1.1rem; color:#111; font-weight:700;">Blink Opticals (Ghod dod Store)</h4>
+                    <p style="margin:0; color:#777; font-size:0.95rem; line-height:1.8;">UG 16, Bhavik Complex, Beside Panjra Pol,<br>Ghod dod Road, Surat – 395001</p>
+                    <div style="margin-top:20px; color:#777; font-size:0.95rem; line-height:1.8;">
+                        <span style="display:block;"><strong style="color:#111; font-weight:700;">Store Contacts:</strong> +91 89089 99099 | +91 9925 339000</span>
+                        <span style="display:block;"><strong style="color:#111; font-weight:700;">E-mail:</strong> contact@blinkopticals.com</span>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <a href="https://maps.google.com" target="_blank" style="color:#777; text-decoration:none; font-size:0.95rem; display:flex; align-items:center; gap:10px; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">
+                            <i class="fas fa-map-marker-alt" style="font-size:1.2rem; color:var(--accent);"></i> Open in Google Maps
+                        </a>
+                    </div>
                 </div>
             </div>
-            
-            <!-- LINK COL 2 -->
-            <div>
-                <div style="height:42px; margin-bottom:30px;"></div> <!-- Spacer -->
-                <h4 style="margin:0 0 25px 0; font-size:1.1rem; color:#111; font-weight:700;">More Info</h4>
-                <div style="display:flex; flex-direction:column; gap:15px;">
-                    <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">FAQs</a>
-                    <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Privacy Policy</a>
-                    <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Shipping Policy</a>
-                    <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Refund & Return Policy</a>
-                    <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Terms & Conditions</a>
+
+            <!-- LINKS ROW -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:40px; align-items: start;">
+                <!-- LINK COL 1 -->
+                <div>
+                    <h4 style="margin:0 0 25px 0; font-size:1.1rem; color:#111; font-weight:700;">Explore Stores</h4>
+                    <div style="display:flex; flex-direction:column; gap:15px;">
+                        <a href="#/locations" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Store Locations</a>
+                        <a href="#/locations" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Contact Us</a>
+                        <a href="#/account" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Track Shipment</a>
+                        <a href="#/account" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Your Account</a>
+                        <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Blogs</a>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- LINK COL 3 -->
-            <div>
-                <div style="height:42px; margin-bottom:30px;"></div> <!-- Spacer -->
-                <h4 style="margin:0 0 25px 0; font-size:1.1rem; color:#111; font-weight:700;">Follow Us</h4>
-                <div style="display:flex; gap:20px; font-size:1.4rem;">
-                    <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-facebook"></i></a>
-                    <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-instagram"></i></a>
-                    <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-twitter"></i></a>
-                    <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-youtube"></i></a>
+                
+                <!-- LINK COL 2 -->
+                <div>
+                    <h4 style="margin:0 0 25px 0; font-size:1.1rem; color:#111; font-weight:700;">More Info</h4>
+                    <div style="display:flex; flex-direction:column; gap:15px;">
+                        <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">FAQs</a>
+                        <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Privacy Policy</a>
+                        <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Shipping Policy</a>
+                        <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Refund & Return Policy</a>
+                        <a href="javascript:void(0)" style="color:#777; text-decoration:none; font-size:1rem; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">Terms & Conditions</a>
+                    </div>
+                </div>
+                
+                <!-- LINK COL 3 -->
+                <div>
+                    <h4 style="margin:0 0 25px 0; font-size:1.1rem; color:#111; font-weight:700;">Follow Us</h4>
+                    <div id="dynamic-footer-social" style="display:flex; gap:20px; font-size:1.4rem; flex-wrap:wrap;">
+                        <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-facebook"></i></a>
+                        <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-instagram"></i></a>
+                        <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-twitter"></i></a>
+                        <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-youtube"></i></a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -354,5 +420,6 @@
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="/js/vto.js?v=1.9"></script>
     <script src="/js/storefront.js?v=1.9"></script>
+    <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

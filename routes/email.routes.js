@@ -3,16 +3,47 @@ const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
 const auth = require('../middleware/auth');
+const db = require('../db');
 
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT),
-    secure: true,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+/**
+ * Dynamically fetch SMTP settings from DB or ENV fallback
+ */
+async function getTransporter(business_id) {
+    try {
+        const { rows } = await db.query(
+            'SELECT setting_value FROM business_settings WHERE business_id = $1 AND setting_key = $2',
+            [business_id || 'biz_blink_001', 'email_sender']
+        );
+
+        let config = rows[0]?.setting_value;
+        if (typeof config === 'string') config = JSON.parse(config);
+
+        if (config && config.smtp_server) {
+            return nodemailer.createTransport({
+                host: config.smtp_server,
+                port: parseInt(config.smtp_port),
+                secure: config.use_tls,
+                auth: {
+                    user: config.smtp_user,
+                    pass: config.smtp_password
+                }
+            });
+        }
+    } catch (e) {
+        console.warn('[email] Failed to load DB config, using ENV fallback');
     }
-});
+
+    // Fallback to ENV variables
+    return nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT),
+        secure: true,
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+        }
+    });
+}
 
 // POST /api/email/send
 router.post('/send', auth, async (req, res) => {
@@ -21,6 +52,7 @@ router.post('/send', auth, async (req, res) => {
         return res.status(400).json({ success: false, error: 'to, subject, and html are required' });
 
     try {
+        const transporter = await getTransporter(req.user?.business_id);
         const info = await transporter.sendMail({
             from: `"BlinkOpticals" <${process.env.SMTP_USER}>`,
             to, subject, html, text
@@ -59,6 +91,7 @@ router.post('/invoice', auth, async (req, res) => {
     </div>`;
 
     try {
+        const transporter = await getTransporter(req.user?.business_id);
         await transporter.sendMail({
             from: `"BlinkOpticals" <${process.env.SMTP_USER}>`,
             to, subject: `Invoice ${invoice_number} - BlinkOpticals`, html
@@ -66,6 +99,34 @@ router.post('/invoice', auth, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(502).json({ success: false, error: 'Invoice email failed' });
+    }
+});
+
+// POST /api/email/verify-smtp
+router.post('/verify-smtp', auth, async (req, res) => {
+    const { smtp_server, smtp_port, smtp_user, smtp_password, use_tls } = req.body;
+    
+    if (!smtp_server || !smtp_user || !smtp_password) {
+        return res.status(400).json({ success: false, error: 'Missing SMTP credentials' });
+    }
+
+    try {
+        const testTransporter = nodemailer.createTransport({
+            host: smtp_server,
+            port: parseInt(smtp_port),
+            secure: use_tls,
+            auth: {
+                user: smtp_user,
+                pass: smtp_password
+            },
+            connectionTimeout: 5000 // 5 seconds timeout
+        });
+
+        await testTransporter.verify();
+        res.json({ success: true, message: 'SMTP connection verified successfully' });
+    } catch (err) {
+        console.error('[smtp verify error]', err.message);
+        res.status(401).json({ success: false, error: 'SMTP connection failed: ' + err.message });
     }
 });
 

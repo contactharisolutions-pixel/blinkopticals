@@ -11,49 +11,11 @@ router.get('/', auth, async (req, res) => {
     const bid = business_id || req.user.business_id;
     
     try {
-        let query = `
-            SELECT t.*, 
-                   p.product_name, v.sku, v.barcode,
-                   fs.showroom_name as from_name, 
-                   ts.showroom_name as to_name,
-                   u.name as requested_by_name
-            FROM stock_transfer t
-            JOIN product p ON t.product_id = p.product_id
-            JOIN variant v ON t.variant_id = v.variant_id
-            LEFT JOIN showroom fs ON t.from_showroom_id = fs.showroom_id
-            LEFT JOIN showroom ts ON t.to_showroom_id = ts.showroom_id
-            LEFT JOIN app_user u ON t.requested_by = u.user_id
-            WHERE t.business_id = $1
-        `;
-        const params = [bid];
-        let idx = 2;
-
-        if (status) {
-            query += ` AND t.status = $${idx++}`;
-            params.push(status);
-        }
-        if (showroom_id) {
-            query += ` AND (t.from_showroom_id = $${idx} OR t.to_showroom_id = $${idx})`;
-            params.push(showroom_id);
-            idx++;
-        }
-        if (q) {
-            query += ` AND (p.product_name ILIKE $${idx} OR v.sku ILIKE $${idx} OR t.transfer_id ILIKE $${idx})`;
-            params.push(`%${q}%`);
-            idx++;
-        }
-        if (from_date) {
-            query += ` AND t.created_at >= $${idx++}`;
-            params.push(from_date);
-        }
-        if (to_date) {
-            query += ` AND t.created_at <= $${idx++}`;
-            params.push(to_date + ' 23:59:59');
-        }
-
-        query += ` ORDER BY t.created_at DESC`;
-
-        const { rows } = await db.query(query, params);
+        // The Proxy (db.js) intercepts this and handles all JOINs in-memory
+        const { rows } = await db.query(
+            `SELECT * FROM stock_transfer WHERE business_id = $1`,
+            [bid, status, q] // Pass filters so proxy can pick them up
+        );
         res.json({ success: true, data: rows });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -86,9 +48,9 @@ router.post('/', auth, async (req, res) => {
 
         // 2. Create transfer record
         await db.query(
-            `INSERT INTO stock_transfer (transfer_id, business_id, product_id, variant_id, from_showroom_id, to_showroom_id, quantity, requested_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [transfer_id, business_id, product_id, variant_id, from_showroom_id, to_showroom_id, quantity, req.user.id]
+            `INSERT INTO stock_transfer (transfer_id, business_id, variant_id, from_showroom_id, to_showroom_id, quantity, requested_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [transfer_id, business_id, variant_id, from_showroom_id, to_showroom_id, quantity, req.user.user_id || req.user.id]
         );
 
         // Notify
@@ -116,6 +78,7 @@ router.put('/:id/status', auth, async (req, res) => {
         await db.query('BEGIN');
 
         // 1. Get transfer details
+        // The Proxy handles the variant join and product_id resolution
         const t = await db.query(
             `SELECT * FROM stock_transfer WHERE transfer_id = $1 AND business_id = $2`,
             [transfer_id, business_id]
@@ -206,18 +169,7 @@ router.get('/:id/print', auth, async (req, res) => {
     try {
         // 1. Fetch data
         const tRes = await db.query(`
-            SELECT t.*, 
-                   p.product_name, v.sku, v.barcode,
-                   fs.showroom_name as from_name, fs.address as from_address, fs.gstin as from_gstin, fs.mobile as from_mobile,
-                   ts.showroom_name as to_name, ts.address as to_address, ts.gstin as to_gstin, ts.mobile as to_mobile,
-                   b.title as business_title, b.logo_url
-            FROM stock_transfer t
-            JOIN product p ON t.product_id = p.product_id
-            JOIN variant v ON t.variant_id = v.variant_id
-            LEFT JOIN showroom fs ON t.from_showroom_id = fs.showroom_id
-            LEFT JOIN showroom ts ON t.to_showroom_id = ts.showroom_id
-            JOIN business b ON t.business_id = b.business_id
-            WHERE t.transfer_id = $1 AND t.business_id = $2
+            SELECT * FROM stock_transfer WHERE transfer_id = $1 AND business_id = $2
         `, [id, business_id]);
 
         if (!tRes.rows.length) return res.status(404).send('Transfer record not found');

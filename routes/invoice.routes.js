@@ -44,12 +44,12 @@ router.get('/:order_id', auth, async (req, res) => {
         const items     = rawItems        || [];
         const gstSettings = settingsArr?.[0]?.setting_value || {};
 
-        // 3. Enrich items with product names
+        // 3. Enrich items with product names and tax rates
         const prodIds = [...new Set(items.map(i => i.product_id).filter(Boolean))];
         let prodMap = {};
         if (prodIds.length) {
             const { data: prods } = await supabase
-                .from('product').select('product_id,product_name,hsn_code,category_id').in('product_id', prodIds);
+                .from('product').select('product_id,product_name,hsn_code,category_id,gst_rate,categories(gst_rate)').in('product_id', prodIds);
             prodMap = Object.fromEntries((prods || []).map(p => [p.product_id, p]));
         }
 
@@ -72,7 +72,9 @@ router.get('/:order_id', auth, async (req, res) => {
             const itemSharedDisc    = sharedDiscount * weight;
             const totalItemDiscount = itemDisc + itemSharedDisc;
             const netAmount         = itemAfterOffer - itemSharedDisc;
-            const taxPercent        = 18; // default; extend with product_tax_mapping if needed
+            
+            const pInfo = prodMap[i.product_id] || {};
+            const taxPercent = parseFloat(pInfo.gst_rate || pInfo.categories?.gst_rate || 12);
             const taxableValue      = netAmount / (1 + taxPercent / 100);
             const taxValue          = netAmount - taxableValue;
 
@@ -81,8 +83,8 @@ router.get('/:order_id', auth, async (req, res) => {
 
             return {
                 ...i,
-                product_name:   prodMap[i.product_id]?.product_name || 'Unknown Product',
-                hsn_code:       prodMap[i.product_id]?.hsn_code     || '9004',
+                product_name:   pInfo.product_name || 'Unknown Product',
+                hsn_code:       pInfo.hsn_code     || '9004',
                 tax_percent:    taxPercent,
                 total_discount: parseFloat(totalItemDiscount.toFixed(2)),
                 taxable_value:  parseFloat(taxableValue.toFixed(2)),

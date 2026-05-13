@@ -38,15 +38,29 @@ router.post('/', auth, rbac('Admin'), async (req, res) => {
     // Normalize showroom_id (Global = null)
     if (showroom_id === '' || showroom_id === 'null') showroom_id = null;
     
+    // Safety: Fallback to token business_id
+    const finalBizId = business_id || req.user?.business_id;
+    if (!finalBizId) return res.status(400).json({ success: false, error: 'Business context missing' });
+
     const user_id = `usr_${Date.now()}`;
-    const password_hash = await bcrypt.hash(password, 12);
     try {
+        const password_hash = await bcrypt.hash(String(password), 12);
         await db.query(
             `INSERT INTO app_user (user_id, business_id, showroom_id, name, mobile, email, role, password_hash, active_status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true)`,
-            [user_id, business_id || req.user.business_id, showroom_id, name, mobile, email, role, password_hash]
+            [
+                user_id, 
+                finalBizId, 
+                showroom_id ?? null, 
+                name, 
+                mobile ?? '', 
+                email, 
+                role, 
+                password_hash
+            ]
         );
         res.status(201).json({ success: true, user_id });
     } catch (err) {
+        console.error('[Staff POST Error]:', err.message);
         if (err.code === '23505') return res.status(409).json({ success: false, error: 'Email already in use' });
         res.status(500).json({ success: false, error: err.message });
     }
@@ -77,6 +91,16 @@ router.patch('/:id/reset-password', auth, rbac('Admin'), async (req, res) => {
     const password_hash = await bcrypt.hash(password, 12);
     await db.query(`UPDATE app_user SET password_hash=$1 WHERE user_id=$2`, [password_hash, req.params.id]);
     res.json({ success: true });
+});
+
+// DELETE /api/staff/:id
+router.delete('/:id', auth, rbac('Admin'), async (req, res) => {
+    try {
+        await db.query(`DELETE FROM app_user WHERE user_id=$1`, [req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 module.exports = router;

@@ -17,6 +17,7 @@ CREATE TABLE business (
     timezone VARCHAR(50) DEFAULT 'Asia/Kolkata',
     date_format VARCHAR(20) DEFAULT 'DD/MM/YYYY',
     active_status BOOLEAN DEFAULT TRUE,
+    social_links JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

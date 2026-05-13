@@ -27,7 +27,7 @@ router.post('/generate-content', auth, rbac('Admin', 'Manager'), async (req, res
     }
 
     try {
-        const modelAI = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const modelAI = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
         const prompt = `Generate premium ecommerce content for eyewear. 
         Brand: ${brand}, Model: ${model}, Category: ${category}, Gender: ${gender}, Shape: ${shape}, Material: ${material}, Frame Type: ${frame_type}, Frame Color: ${color}, Lens Material: ${lens_material}, Lens Color: ${lens_color}.
         
@@ -67,7 +67,7 @@ router.post('/tag-image', auth, rbac('Admin', 'Manager'), async (req, res) => {
         const buffer = await response.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');
 
-        const modelAI = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const modelAI = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
         const prompt = "Analyze this image and provide 5-10 descriptive tags for it as a comma separated list. Focus on eyewear style, shape, color, and material if applicable. Return only the tags.";
 
         const result = await modelAI.generateContent([

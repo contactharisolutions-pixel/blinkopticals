@@ -93,8 +93,13 @@ router.post('/logout', (req, res) => {
 });
 
 // GET /api/auth/me
-router.get('/me', require('../middleware/auth'), (req, res) => {
-    res.json({ success: true, user: req.user });
+router.get('/me', require('../middleware/auth'), async (req, res) => {
+    try {
+        const { rows } = await db.query('SELECT name FROM app_user WHERE user_id = $1', [req.user.id]);
+        res.json({ success: true, user: { ...req.user, name: rows[0]?.name || 'Admin' } });
+    } catch (e) {
+        res.json({ success: true, user: req.user });
+    }
 });
 
 // GET /api/auth/permissions — returns allowed modules for current user's role

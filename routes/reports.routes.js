@@ -39,10 +39,10 @@ router.get('/dashboard', auth, async (req, res) => {
         })();
 
         // Fetch orders and inventory in parallel
-        let ordersQ = supabase.from('customer_order').select('order_id,total_amount,tax_amount,discount_amount,order_status,payment_status,created_at,showroom_id').eq('business_id', business_id).gte('created_at', periodStart + 'T00:00:00');
+        let ordersQ = supabase.from('customer_order').select('order_id,total_amount,tax_amount,discount_amount,order_status,payment_status,created_at,showroom_id').eq('business_id', business_id).gte('created_at', periodStart + 'T00:00:00').limit(5000);
         if (showroom_id) ordersQ = ordersQ.eq('showroom_id', showroom_id);
-
-        let invQ = supabase.from('inventory').select('available_qty').eq('business_id', business_id);
+        
+        let invQ = supabase.from('inventory').select('available_qty').eq('business_id', business_id).limit(10000);
         if (showroom_id) invQ = invQ.eq('showroom_id', showroom_id);
 
         const [{ data: orders }, { data: inventory }] = await Promise.all([ordersQ, invQ]);
@@ -54,9 +54,9 @@ router.get('/dashboard', auth, async (req, res) => {
         const low_stock_alerts = (inventory || []).filter(i => parseInt(i.available_qty || 0) <= 5).length;
 
         // Total stock units and value
-        let invWithValQ = supabase.from('inventory').select('available_qty,product_id').eq('business_id', business_id);
+        let invWithValQ = supabase.from('inventory').select('available_qty,product_id').eq('business_id', business_id).limit(10000);
         if (showroom_id) invWithValQ = invWithValQ.eq('showroom_id', showroom_id);
-        let prodValQ = supabase.from('product').select('product_id,mrp,selling_price').eq('business_id', business_id);
+        let prodValQ = supabase.from('product').select('product_id,mrp,selling_price').eq('business_id', business_id).limit(5000);
         const [{ data: invFull }, { data: prodsFull }] = await Promise.all([invWithValQ, prodValQ]);
         const prodMrpMap = Object.fromEntries((prodsFull || []).map(p => [p.product_id, parseFloat(p.selling_price || p.mrp || 0)]));
         const total_stock_units = (invFull || []).reduce((s, i) => s + parseInt(i.available_qty || 0), 0);
@@ -107,14 +107,14 @@ router.get('/dashboard-rich', auth, async (req, res) => {
             { data: products },   { data: inventory },
             { data: orderItems }, { data: orders }
         ] = await Promise.all([
-            supabase.from('brands').select('id,name').eq('business_id', business_id),
-            supabase.from('categories').select('id,name').eq('business_id', business_id),
-            supabase.from('genders').select('id,name').eq('business_id', business_id),
-            supabase.from('showroom').select('showroom_id,showroom_name').eq('business_id', business_id),
-            supabase.from('product').select('product_id,brand_id,category_id,gender_id,product_name,main_image,model_no,mrp').eq('business_id', business_id).eq('active_status', true),
-            supabase.from('inventory').select('variant_id,product_id,showroom_id,available_qty,business_id').eq('business_id', business_id),
-            supabase.from('order_item').select('item_id,order_id,product_id,quantity,unit_price'),
-            supabase.from('customer_order').select('order_id,showroom_id,order_type,payment_status,total_amount,created_at').eq('business_id', business_id)
+            supabase.from('brands').select('id,name').eq('business_id', business_id).limit(1000),
+            supabase.from('categories').select('id,name').eq('business_id', business_id).limit(1000),
+            supabase.from('genders').select('id,name').eq('business_id', business_id).limit(100),
+            supabase.from('showroom').select('showroom_id,showroom_name').eq('business_id', business_id).limit(100),
+            supabase.from('product').select('product_id,brand_id,category_id,gender_id,product_name,main_image,model_no,mrp').eq('business_id', business_id).eq('active_status', true).limit(5000),
+            supabase.from('inventory').select('variant_id,product_id,showroom_id,available_qty,business_id').eq('business_id', business_id).limit(10000),
+            supabase.from('order_item').select('item_id,order_id,product_id,quantity,unit_price').limit(10000),
+            supabase.from('customer_order').select('order_id,showroom_id,order_type,payment_status,total_amount,created_at').eq('business_id', business_id).limit(5000)
         ]);
 
         // Build lookup maps
@@ -404,16 +404,22 @@ router.get('/gst/r1', auth, rbac('Admin', 'Manager'), async (req, res) => {
             SELECT 
                 co.order_id, co.created_at as date, co.order_type,
                 c.name as customer_name, c.mobile as customer_mobile,
-                p.product_name, p.category_id,
-                oi.qty, oi.price_at_order as taxable_value,
-                it.tax_percentage as rate,
-                it.cgst_amount, it.sgst_amount, it.igst_amount, it.tax_amount as total_tax,
-                (oi.qty * oi.price_at_order + it.tax_amount) as invoice_value
+                p.product_name, p.hsn_code, p.category_id,
+                cat.name as category_name,
+                oi.quantity as qty, oi.unit_price as mrp,
+                COALESCE(p.gst_rate, cat.gst_rate, 12.00) as rate,
+                -- Dynamic calculation if stored amounts are 0
+                COALESCE(NULLIF(oi.cgst_amount, 0), CASE WHEN co.showroom_id IS NOT NULL THEN (oi.total_price - (oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100))) / 2 ELSE 0 END) as cgst_amount,
+                COALESCE(NULLIF(oi.sgst_amount, 0), CASE WHEN co.showroom_id IS NOT NULL THEN (oi.total_price - (oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100))) / 2 ELSE 0 END) as sgst_amount,
+                COALESCE(NULLIF(oi.igst_amount, 0), 0) as igst_amount,
+                (oi.total_price - (oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100))) as total_tax,
+                (oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100)) as taxable_value,
+                oi.total_price as invoice_value
             FROM customer_order co
             JOIN customer c ON co.customer_id = c.customer_id
-            JOIN customer_order_item oi ON co.order_id = oi.order_id
+            JOIN order_item oi ON co.order_id = oi.order_id
             JOIN product p ON oi.product_id = p.product_id
-            LEFT JOIN order_item_tax it ON oi.order_id = it.order_id AND oi.product_id = it.product_id
+            LEFT JOIN categories cat ON p.category_id = cat.id
             WHERE ${filter.join(' AND ')}
             ORDER BY co.created_at DESC`;
         
@@ -431,19 +437,19 @@ router.get('/gst/hsn', auth, rbac('Admin', 'Manager'), async (req, res) => {
     try {
         const query = `
             SELECT 
-                p.category_id as hsn_desc, -- Using category as proxy for HSN if HSN column is missing
-                SUM(oi.qty) as total_qty,
-                SUM(oi.qty * oi.price_at_order) as total_taxable_value,
-                SUM(it.tax_amount) as total_tax,
-                SUM(it.cgst_amount) as total_cgst,
-                SUM(it.sgst_amount) as total_sgst,
-                SUM(it.igst_amount) as total_igst
-            FROM customer_order_item oi
+                COALESCE(p.hsn_code, cat.hsn_code, '9004') as hsn_desc,
+                SUM(oi.quantity) as total_qty,
+                SUM(oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100)) as total_taxable_value,
+                SUM(oi.total_price - (oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100))) as total_tax,
+                SUM(COALESCE(NULLIF(oi.cgst_amount, 0), (oi.total_price - (oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100))) / 2)) as total_cgst,
+                SUM(COALESCE(NULLIF(oi.sgst_amount, 0), (oi.total_price - (oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100))) / 2)) as total_sgst,
+                SUM(oi.igst_amount) as total_igst
+            FROM order_item oi
             JOIN product p ON oi.product_id = p.product_id
+            LEFT JOIN categories cat ON p.category_id = cat.id
             JOIN customer_order co ON oi.order_id = co.order_id
-            LEFT JOIN order_item_tax it ON oi.order_id = it.order_id AND oi.product_id = it.product_id
             WHERE co.business_id = $1 AND DATE(co.created_at) BETWEEN $2 AND $3 AND co.payment_status != 'cancelled'
-            GROUP BY p.category_id`;
+            GROUP BY COALESCE(p.hsn_code, cat.hsn_code, '9004')`;
         
         const { rows } = await db.query(query, vals);
         res.json({ success: true, data: rows });
@@ -459,18 +465,19 @@ router.get('/gst/summary', auth, rbac('Admin', 'Manager'), async (req, res) => {
     try {
         const query = `
             SELECT 
-                it.tax_percentage as gst_rate,
-                SUM(oi.qty * oi.price_at_order) as total_taxable,
-                SUM(it.cgst_amount) as cgst,
-                SUM(it.sgst_amount) as sgst,
-                SUM(it.igst_amount) as igst,
-                SUM(it.tax_amount) as total_gst
-            FROM order_item_tax it
-            JOIN customer_order co ON it.order_id = co.order_id
-            JOIN customer_order_item oi ON it.order_id = oi.order_id AND it.product_id = oi.product_id
+                COALESCE(p.gst_rate, cat.gst_rate, 12.00) as gst_rate,
+                SUM(oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100)) as total_taxable,
+                SUM(COALESCE(NULLIF(oi.cgst_amount, 0), (oi.total_price - (oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100))) / 2)) as cgst,
+                SUM(COALESCE(NULLIF(oi.sgst_amount, 0), (oi.total_price - (oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100))) / 2)) as sgst,
+                SUM(oi.igst_amount) as igst,
+                SUM(oi.total_price - (oi.total_price / (1 + COALESCE(p.gst_rate, cat.gst_rate, 12.00)/100))) as total_gst
+            FROM order_item oi
+            JOIN product p ON oi.product_id = p.product_id
+            LEFT JOIN categories cat ON p.category_id = cat.id
+            JOIN customer_order co ON oi.order_id = co.order_id
             WHERE co.business_id = $1 AND DATE(co.created_at) BETWEEN $2 AND $3 AND co.payment_status != 'cancelled'
-            GROUP BY it.tax_percentage
-            ORDER BY it.tax_percentage ASC`;
+            GROUP BY COALESCE(p.gst_rate, cat.gst_rate, 12.00)
+            ORDER BY gst_rate ASC`;
         
         const { rows } = await db.query(query, vals);
         res.json({ success: true, data: rows });

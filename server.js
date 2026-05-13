@@ -48,11 +48,11 @@ app.use(cookieParser());
 
 // ─── Rate Limiting ─────────────────────────────────────────────────────────────
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 200,
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 2000, // 2000 requests per minute
     standardHeaders: true,
     legacyHeaders: false,
-    message: { success: false, error: 'Too many requests. Try again in 15 minutes.' }
+    message: { success: false, error: 'Too many requests. Try again in 1 minute.' }
 });
 const authLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
@@ -93,8 +93,13 @@ app.use('/api/business',   guards.staff,     require('./routes/business.routes')
 app.use('/api/settings',   require('./routes/settings.routes')); 
 app.use('/api/tax',        require('./routes/tax.routes')); 
 app.use('/api/invoice',    require('./routes/invoice.routes')); 
+app.use('/api/invoices',   guards.orders, require('./routes/invoices.routes'));
 app.use('/api/comm',       require('./routes/communication.routes')); 
+app.use('/api/logistics',  require('./routes/logistics.routes')); 
+app.use('/api/access',     require('./routes/access.routes')); 
 app.use('/api/transfers',  guards.inventory, require('./routes/transfers.routes')); 
+app.use('/api/chat',       require('./routes/chat.routes'));
+app.use('/api/seo',        require('./routes/seo.routes'));
 
 app.get('/api/debug-db-counts', async (req, res) => {
     try {
@@ -110,11 +115,23 @@ app.get('/api/debug-db-counts', async (req, res) => {
 });
 
 // ─── Admin HTML Routes (MUST be before static middleware) ────────────────────
-app.get('/admin/login',     (req, res) => res.sendFile(path.join(__dirname, 'public/admin/login/index.html')));
-app.get('/admin/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public/admin/dashboard/index.html')));
-app.get('/admin',           (req, res) => res.redirect('/admin/login'));
+// 1. Admin login page (static mapping handles /admin/login and /admin/login/index.html)
+app.use('/admin/login', express.static(path.join(__dirname, 'public/admin/login')));
 
-// ─── Static UI ────────────────────────────────────────────────────────────────
+// 2. Serve admin static assets (CSS, JS, images) BEFORE the catch-all so iframes work
+//    This MUST come before app.use('/admin') otherwise erp.css/erp-core.js return admin.html
+app.use('/admin/css', express.static(path.join(__dirname, 'public/admin/css')));
+app.use('/admin/js',  express.static(path.join(__dirname, 'public/admin/js')));
+app.use('/admin/img', express.static(path.join(__dirname, 'public/admin/img')));
+
+// 3. Legacy Vanilla JS dashboard → served for iframe-based modules
+//    LegacyModuleWrapper loads: /legacy/admin/dashboard?iframe=true
+app.use('/legacy', (req, res) => res.sendFile(path.join(__dirname, 'public/admin/dashboard/index.html')));
+
+// 4. ALL /admin/* routes → clean React SPA (admin.html has ONLY React, no storefront HTML)
+app.use('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+
+// ─── Static Public Assets ───────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, '.'), { index: false }));
 
@@ -124,8 +141,8 @@ app.use('/api', (req, res) => {
     res.status(404).json({ success: false, error: `API route not found: ${req.originalUrl}` });
 });
 
-// SPA fallback
-app.get(/^(?!\/api).*/, (req, res) =>
+// SPA fallback → storefront for all non-admin, non-api routes
+app.get(/^(?!\/api)(?!\/admin).*/, (req, res) =>
     res.sendFile(path.join(__dirname, 'index.html'))
 );
 

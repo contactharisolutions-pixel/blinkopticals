@@ -1,4 +1,4 @@
-// routes/master.routes.js — Dynamic Master Data CRUD
+// routes/master.routes.js — Dynamic Master Data CRUD with Native SEO Persistence Layer
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
@@ -12,25 +12,45 @@ const validateTable = (table) => {
     if (!TABLES.includes(table)) throw new Error('Invalid master data source');
 };
 
+// Auto initialize required master SEO columns deterministically
+let seoSchemaSynced = false;
+async function syncMasterSeoSchemas() {
+    if (seoSchemaSynced) return;
+    const targetTables = ['brands', 'categories', 'genders'];
+    for (const t of targetTables) {
+        try {
+            await db.query(`
+                ALTER TABLE ${t}
+                ADD COLUMN IF NOT EXISTS seo_title TEXT,
+                ADD COLUMN IF NOT EXISTS seo_description TEXT,
+                ADD COLUMN IF NOT EXISTS seo_keywords TEXT;
+            `);
+        } catch (e) {
+            console.warn(`[Master SEO Schema Sync Warning for ${t}]`, e.message);
+        }
+    }
+    seoSchemaSynced = true;
+}
+
 // GET /api/master/:table — List all records
 router.get('/:table', auth, async (req, res) => {
+    await syncMasterSeoSchemas();
     try {
         const { table } = req.params;
         validateTable(table);
         const business_id = req.user.business_id || 'biz_blink_001';
-        console.log(`[Master GET] User Role: ${req.user.role}, User ID: ${req.user.id}, Req Biz: ${req.user.business_id}`);
         
         const { rows } = await db.query(
             `SELECT * FROM ${table} WHERE business_id = $1 ORDER BY name ASC`,
             [business_id]
         );
-        console.log(`[Master GET] Table: ${table}, Biz: ${business_id}, Rows: ${rows.length}`);
         res.json({ success: true, data: rows });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
 
 // POST /api/master/:table — Create record
 router.post('/:table', auth, rbac('Admin', 'Manager'), async (req, res) => {
+    await syncMasterSeoSchemas();
     try {
         const { table } = req.params;
         validateTable(table);
@@ -44,13 +64,20 @@ router.post('/:table', auth, rbac('Admin', 'Manager'), async (req, res) => {
         const cols = ['business_id', 'name', 'slug', 'active_status'];
         const vals = [business_id, body.name, slug, body.active_status !== undefined ? body.active_status : true];
         
+        // Generic fields mapped on core models
+        const hasSeo = ['brands', 'categories', 'genders'].includes(table);
+        if (hasSeo) {
+            cols.push('seo_title', 'seo_description', 'seo_keywords');
+            vals.push(body.seo_title || null, body.seo_description || null, body.seo_keywords || null);
+        }
+
         if (table === 'brands') {
             cols.push('logo', 'hero_url', 'description');
             vals.push(body.logo || null, body.hero_url || null, body.description || null);
         }
         if (table === 'categories') {
-            cols.push('parent_category_id');
-            vals.push(body.parent_category_id || null);
+            cols.push('parent_category_id', 'hsn_code', 'gst_rate');
+            vals.push(body.parent_category_id || null, body.hsn_code || null, body.gst_rate || 12.00);
         }
         if (table === 'frame_colors') {
             cols.push('color_code');
@@ -67,6 +94,7 @@ router.post('/:table', auth, rbac('Admin', 'Manager'), async (req, res) => {
 
 // PUT /api/master/:table/:id — Update record
 router.put('/:table/:id', auth, rbac('Admin', 'Manager'), async (req, res) => {
+    await syncMasterSeoSchemas();
     try {
         const { table, id } = req.params;
         validateTable(table);
@@ -76,14 +104,21 @@ router.put('/:table/:id', auth, rbac('Admin', 'Manager'), async (req, res) => {
         const setClauses = ['name = $1', 'slug = $2', 'active_status = $3', 'updated_at = NOW()'];
         const vals = [body.name, body.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-'), body.active_status, business_id, id];
         
-        let counter = 6;
+        let counter = 6; // starts after $5
+        
+        const hasSeo = ['brands', 'categories', 'genders'].includes(table);
+        if (hasSeo) {
+            setClauses.push(`seo_title = $${counter++}`, `seo_description = $${counter++}`, `seo_keywords = $${counter++}`);
+            vals.push(body.seo_title || null, body.seo_description || null, body.seo_keywords || null);
+        }
+
         if (table === 'brands') {
             setClauses.push(`logo = $${counter++}`, `hero_url = $${counter++}`, `description = $${counter++}`);
             vals.push(body.logo || null, body.hero_url || null, body.description || null);
         }
         if (table === 'categories') {
-            setClauses.push(`parent_category_id = $${counter++}`);
-            vals.push(body.parent_category_id || null);
+            setClauses.push(`parent_category_id = $${counter++}`, `hsn_code = $${counter++}`, `gst_rate = $${counter++}`);
+            vals.push(body.parent_category_id || null, body.hsn_code || null, body.gst_rate || 12.00);
         }
         if (table === 'frame_colors') {
             setClauses.push(`color_code = $${counter++}`);

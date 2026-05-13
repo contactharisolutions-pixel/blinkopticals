@@ -11,8 +11,8 @@ router.get('/health', (req, res) => res.json({ status: 'ok' }));
 router.get('/download-template', (req, res) => {
     try {
         const data = [
-            { 'Brand': 'Ray-Ban', 'Category': 'Eyeglasses', 'Model No': 'RB3025', 'UPC Code': '829576019311', 'Frame Type': 'Full Rim', 'Color Code': '001/51', 'Size Code': '58-14', 'Frame Material': 'Metal', 'Gender': 'Unisex', 'Qty': 10, 'MRP': 9500 },
-            { 'Brand': 'Oakley',  'Category': 'Sunglasses',  'Model No': 'Holbrook', 'UPC Code': '888392100000', 'Frame Type': 'Full Rim', 'Color Code': 'Black', 'Size Code': 'Standard', 'Frame Material': 'Plastic', 'Gender': 'Male', 'Qty': 5, 'MRP': 12000 }
+            { 'Brand': 'Ray-Ban', 'Category': 'Eyeglasses', 'Model No': 'RB3025', 'Barcode': 'SKU001-C1', 'UPC Code': '829576019311', 'Frame Type': 'Full Rim', 'Color Code': '001/51', 'Size Code': '58-14', 'Frame Material': 'Metal', 'Gender': 'Unisex', 'Qty': 10, 'MRP': 9500 },
+            { 'Brand': 'Oakley',  'Category': 'Sunglasses',  'Model No': 'Holbrook', 'Barcode': 'SKU002-BLK', 'UPC Code': '888392100000', 'Frame Type': 'Full Rim', 'Color Code': 'Black', 'Size Code': 'Standard', 'Frame Material': 'Plastic', 'Gender': 'Male', 'Qty': 5, 'MRP': 12000 }
         ];
         const wb = xlsx.utils.book_new();
         xlsx.utils.book_append_sheet(wb, xlsx.utils.json_to_sheet(data), 'Template');
@@ -43,6 +43,7 @@ router.get('/catalog-public', async (req, res) => {
                 lens_width, bridge_size, temple_length,
                 main_image, additional_images,
                 description, short_description,
+                seo_title, seo_description, seo_keywords,
                 created_at
             `)
             .eq('is_published', true)
@@ -147,6 +148,9 @@ router.get('/catalog-public', async (req, res) => {
                 additional_images: p.additional_images,
                 desc:       p.description,
                 short_desc: p.short_description,
+                seo_title:  p.seo_title || `${p.product_name} Premium Fit | BlinkOpticals`,
+                seo_description: p.seo_description || p.short_description || `Order official ${p.product_name} frames directly from BlinkOpticals. Lifetime service availability and zero-latency clinical prescription support.`,
+                seo_keywords: p.seo_keywords || p.tags?.join(', ') || `${p.product_name}, luxury opticals`,
                 offer_name:     offer?.offer_name     || null,
                 offer_type:     offer?.offer_type     || null,
                 offer_discount: offer?.discount_value || null
@@ -184,13 +188,22 @@ router.get('/coupons-public', async (req, res) => {
 router.get('/settings-public', async (req, res) => {
     const supabase = require('../supabase_client');
     try {
-        const { data, error } = await supabase
-            .from('business_settings')
-            .select('setting_key,setting_value')
-            .in('setting_key', ['general_settings', 'gst_settings']);
-        if (error) throw new Error(error.message);
+        const [setRes, bizRes] = await Promise.all([
+            supabase
+                .from('business_settings')
+                .select('setting_key,setting_value')
+                .in('setting_key', ['general_settings', 'gst_settings', 'marketing_pixels']),
+            supabase
+                .from('business')
+                .select('social_links')
+                .limit(1)
+        ]);
+        
         const settings = {};
-        (data || []).forEach(r => settings[r.setting_key] = r.setting_value);
+        (setRes.data || []).forEach(r => settings[r.setting_key] = r.setting_value);
+        if (bizRes.data?.[0]?.social_links) {
+            settings.social_links = bizRes.data[0].social_links;
+        }
         res.json({ success: true, data: settings });
     } catch (err) {
         console.error('[settings-public error]', err.message);
@@ -259,6 +272,23 @@ router.get('/cms/page/:slug', async (req, res) => {
     } catch (err) {
         console.error('[cms/page error]', err.message);
         res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ── GET /api/public/showrooms ────────────────────────────────────────
+router.get('/showrooms', async (req, res) => {
+    const supabase = require('../supabase_client');
+    try {
+        const { data, error } = await supabase
+            .from('showroom')
+            .select('*')
+            .eq('active_status', true)
+            .order('created_at', { ascending: true });
+        if (error) throw new Error(error.message);
+        res.json({ success: true, data: data || [] });
+    } catch (err) {
+        console.error('[public/showrooms error]', err.message);
+        res.json({ success: true, data: [] });
     }
 });
 

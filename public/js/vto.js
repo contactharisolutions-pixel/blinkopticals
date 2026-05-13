@@ -31,10 +31,18 @@ window.startVTO = async function(frameUrl) {
     // 2. Load Models if not loaded
     if (!modelLoaded) {
         try {
-            await Promise.all([
-                faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-                faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models')
-            ]);
+            if (!window.faceapi) throw new Error("FaceAPI library not found");
+            console.log("Loading AI Models from /models...");
+            
+            console.log("Loading TinyFaceDetector...");
+            await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+            console.log("TinyFaceDetector Loaded");
+
+            console.log("Loading FaceLandmark68Net...");
+            await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+            console.log("FaceLandmark68Net Loaded");
+
+            console.log("AI Models Loaded Successfully");
             modelLoaded = true;
         } catch (e) {
             console.error("AI Model Load Fail:", e);

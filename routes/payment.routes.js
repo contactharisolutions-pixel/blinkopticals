@@ -62,4 +62,30 @@ router.post('/verify', async (req, res) => {
     }
 });
 
+// POST /api/payment/verify-credentials
+router.post('/verify-credentials', auth, async (req, res) => {
+    const { provider, api_key, api_secret } = req.body;
+    
+    if (provider === 'razorpay') {
+        try {
+            const testRzp = new Razorpay({
+                key_id: api_key,
+                key_secret: api_secret
+            });
+            // Try fetching a single order or just list 1 to verify
+            await testRzp.orders.all({ count: 1 });
+            return res.json({ success: true, message: 'Razorpay connected successfully' });
+        } catch (err) {
+            return res.status(401).json({ success: false, error: 'Invalid Razorpay credentials' });
+        }
+    }
+    
+    if (provider === 'stripe') {
+        // Stripe verification logic would go here
+        return res.json({ success: true, message: 'Stripe check mocked: Success' });
+    }
+
+    res.status(400).json({ success: false, error: 'Provider not supported for live verification' });
+});
+
 module.exports = router;

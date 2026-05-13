@@ -1,14 +1,14 @@
-
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config({ path: `.env.development` });
-
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+const db = require('../db');
 
 async function check() {
-    console.log('Checking showroom table...');
-    const { data, error } = await supabase.from('showroom').select('*');
-    if (error) console.error('Error:', error);
-    else console.log('Showrooms:', data);
+    try {
+        const { rows } = await db.query(`SELECT showroom_id, showroom_name FROM showroom`);
+        console.log('Available Showrooms:', rows);
+        process.exit(0);
+    } catch (err) {
+        console.error('Check failed:', err);
+        process.exit(1);
+    }
 }
 
 check();

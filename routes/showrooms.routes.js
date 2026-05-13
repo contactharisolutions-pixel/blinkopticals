@@ -28,13 +28,14 @@ router.get('/', auth, async (req, res) => {
 
 // POST /api/showrooms
 router.post('/', auth, rbac('Admin'), async (req, res) => {
-    const { business_id, showroom_name, address, city, contact_number, manager_name, gstin, email, secondary_contact, google_maps_link } = req.body;
+    const { business_id, showroom_name, address, city, state, pincode, contact_number, manager_name, gstin, email, secondary_contact, google_maps_link } = req.body;
     if (!showroom_name) return res.status(400).json({ success: false, error: 'showroom_name required' });
+    const finalBizId = business_id || req.user.business_id;
     const showroom_id = `show_${Date.now()}`;
     try {
         await db.query(
-            `INSERT INTO showroom (showroom_id, business_id, showroom_name, address, city, contact_number, manager_name, gstin, email, secondary_contact, google_maps_link) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-            [showroom_id, business_id, showroom_name, address, city, contact_number, manager_name, gstin, email, secondary_contact, google_maps_link]
+            `INSERT INTO showroom (showroom_id, business_id, showroom_name, address, city, state, pincode, contact_number, manager_name, gstin, email, secondary_contact, google_maps_link) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+            [showroom_id, finalBizId, showroom_name, address, city, state, pincode, contact_number, manager_name, gstin, email, secondary_contact, google_maps_link]
         );
         res.status(201).json({ success: true, showroom_id });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
@@ -42,25 +43,29 @@ router.post('/', auth, rbac('Admin'), async (req, res) => {
 
 // PUT /api/showrooms/:id
 router.put('/:id', auth, rbac('Admin'), async (req, res) => {
-    const { showroom_name, address, city, contact_number, manager_name, active_status, gstin, email, secondary_contact, google_maps_link } = req.body;
+    const { showroom_name, address, city, state, pincode, contact_number, manager_name, active_status, gstin, email, secondary_contact, google_maps_link } = req.body;
     try {
         await db.query(
             `UPDATE showroom SET 
                 showroom_name = COALESCE($1, showroom_name), 
                 address = COALESCE($2, address), 
                 city = COALESCE($3, city), 
-                contact_number = COALESCE($4, contact_number), 
-                manager_name = COALESCE($5, manager_name), 
-                active_status = COALESCE($6, active_status),
-                gstin = COALESCE($7, gstin),
-                email = COALESCE($8, email),
-                secondary_contact = COALESCE($9, secondary_contact),
-                google_maps_link = COALESCE($10, google_maps_link)
-            WHERE showroom_id = $11`,
+                state = COALESCE($4, state), 
+                pincode = COALESCE($5, pincode), 
+                contact_number = COALESCE($6, contact_number), 
+                manager_name = COALESCE($7, manager_name), 
+                active_status = COALESCE($8, active_status),
+                gstin = COALESCE($9, gstin),
+                email = COALESCE($10, email),
+                secondary_contact = COALESCE($11, secondary_contact),
+                google_maps_link = COALESCE($12, google_maps_link)
+            WHERE showroom_id = $13`,
             [
                 showroom_name ?? null, 
                 address ?? null, 
                 city ?? null, 
+                state ?? null, 
+                pincode ?? null, 
                 contact_number ?? null, 
                 manager_name ?? null, 
                 active_status ?? null, 

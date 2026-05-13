@@ -146,30 +146,65 @@ router.post('/classify', auth, async (req, res) => {
     res.json({ success: true, suggestions: {} });
 });
 
-// POST /api/products/bulk-delete
+// POST /api/products/bulk-delete — Safe bulk delete
 router.post('/bulk-delete', auth, async (req, res) => {
     const { ids } = req.body;
+    const biz = req.user.business_id;
     if (!ids || !ids.length) return res.status(400).json({ success: false, error: 'No IDs provided' });
+
     try {
         await db.query('BEGIN');
-        // Delete all inventory for variants attached to these products
+        
+        // 1. Delete transient dependencies
         await db.query(`
             DELETE FROM inventory 
-            WHERE variant_id IN (
-                SELECT variant_id FROM variant WHERE product_id = ANY($1)
-            )
+            WHERE variant_id IN (SELECT variant_id FROM variant WHERE product_id = ANY($1))
         `, [ids]);
         
-        // Delete all variants for these products
-        await db.query(`DELETE FROM variant WHERE product_id = ANY($1)`, [ids]);
-        
-        // Delete the products
-        await db.query(`DELETE FROM product WHERE product_id = ANY($1) AND business_id = $2`, [ids, req.user.business_id]);
-        
+        await db.query(`
+            DELETE FROM cart_items 
+            WHERE variant_id IN (SELECT variant_id FROM variant WHERE product_id = ANY($1))
+        `, [ids]);
+
+        await db.query(`
+            DELETE FROM wishlist 
+            WHERE variant_id IN (SELECT variant_id FROM variant WHERE product_id = ANY($1))
+        `, [ids]);
+
+        // 2. Identification phase: Find which products have transactional history
+        // We check order_item and purchase_items directly as they both contain product_id
+        const { rows: permanentRefs } = await db.query(`
+            SELECT DISTINCT product_id FROM order_item WHERE product_id = ANY($1)
+            UNION
+            SELECT DISTINCT product_id FROM purchase_items WHERE product_id = ANY($1)
+        `, [ids]);
+
+        const permanentIds = permanentRefs.map(r => r.product_id);
+        const deletableIds = ids.filter(id => !permanentIds.includes(id));
+
+        // 3. Perform Hard Delete for safe ones
+        if (deletableIds.length > 0) {
+            await db.query(`DELETE FROM variant WHERE product_id = ANY($1)`, [deletableIds]);
+            await db.query(`DELETE FROM product WHERE product_id = ANY($1) AND business_id = $2`, [deletableIds, biz]);
+        }
+
+        // 4. Perform Soft Delete for permanent ones
+        if (permanentIds.length > 0) {
+            await db.query(`UPDATE product SET active_status=false, is_published=false WHERE product_id = ANY($1) AND business_id = $2`, [permanentIds, biz]);
+        }
+
         await db.query('COMMIT');
-        res.json({ success: true });
+        res.json({ 
+            success: true, 
+            deleted_count: deletableIds.length, 
+            archived_count: permanentIds.length,
+            message: permanentIds.length > 0 
+                ? `${deletableIds.length} deleted, ${permanentIds.length} archived due to existing orders.` 
+                : 'All selected products removed.'
+        });
     } catch (err) {
-        await db.query('ROLLBACK');
+        if (db.query) await db.query('ROLLBACK');
+        console.error('[bulk-delete error]', err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -283,7 +318,9 @@ router.post('/bulk-import-save', auth, async (req, res) => {
                     material_id:    row._material_id || null,
                     gender_id:      row._gender_id || null,
                     is_published:   false,
-                    active_status:  true
+                    active_status:  true,
+                    hsn_code:       row['HSN Code'] || null,
+                    gst_rate:       parseFloat(row['GST Rate']) || 12.00
                 });
                 if (pErr) throw new Error(`Product insert: ${pErr.message}`);
             }
@@ -308,7 +345,8 @@ router.post('/bulk-import-save', auth, async (req, res) => {
                     product_id: pid,
                     color_code: row['Color Code'] || '',
                     size_code:  row['Size Code']  || '',
-                    sku
+                    sku,
+                    barcode:    row['Barcode']    || null
                 });
                 if (vErr) throw new Error(`Variant insert: ${vErr.message}`);
             }
@@ -366,7 +404,8 @@ router.post('/bulk-import-save', auth, async (req, res) => {
 router.post('/quick-entry', auth, async (req, res) => {
     const {
         product_name, brand_id, model_no, color_code, size_code, frame_type_id, material_id,
-        gender_id, qty, mrp, showroom_id, upc_code, category_id, shape_id
+        gender_id, qty, mrp, showroom_id, upc_code, barcode, category_id, shape_id,
+        hsn_code, gst_rate
     } = req.body;
 
     if (!brand_id || !model_no) return res.status(400).json({ success: false, error: 'Brand and Model No are required' });
@@ -393,6 +432,8 @@ router.post('/quick-entry', auth, async (req, res) => {
                 ...(frame_type_id && { frame_type_id }),
                 ...(material_id   && { material_id }),
                 ...(shape_id      && { shape_id }),
+                ...(hsn_code      && { hsn_code }),
+                ...(gst_rate      && { gst_rate }),
             }).eq('product_id', pid);
         } else {
             pid = `prod_${Date.now()}`;
@@ -407,7 +448,8 @@ router.post('/quick-entry', auth, async (req, res) => {
                 gender_id: gender_id||null, frame_type_id: frame_type_id||null,
                 shape_id: shape_id||null, material_id: material_id||null,
                 mrp: parseFloat(mrp)||0, selling_price: parseFloat(mrp)||0,
-                upc_code: upc_code||null, is_published: false, active_status: true
+                upc_code: upc_code||null, hsn_code: hsn_code||null, gst_rate: parseFloat(gst_rate)||12.00,
+                is_published: false, active_status: true
             });
             if (pErr) throw new Error(`Product insert failed: ${pErr.message}`);
         }
@@ -431,7 +473,8 @@ router.post('/quick-entry', auth, async (req, res) => {
 
             const { error: vErr } = await supabase.from('variant').insert({
                 variant_id: vid, product_id: pid,
-                color_code: color_code||'', size_code: size_code||'', sku
+                color_code: color_code||'', size_code: size_code||'', sku,
+                barcode: barcode || `BKG${Math.floor(100000 + Math.random() * 900000)}`
             });
             if (vErr) throw new Error(`Variant insert failed: ${vErr.message}`);
         }
@@ -483,13 +526,14 @@ router.get('/', async (req, res) => {
         const {
             business_id, search, brand_id, gender_id, category_id, frame_type_id,
             color_code, size_code, min_price, max_price, is_published,
-            include_inactive, in_stock, showroom_id, limit = 200, offset = 0
+            include_inactive, in_stock, showroom_id, limit = 200, offset = 0, cat_type
         } = req.query;
 
         const biz = business_id || (req.user && req.user.business_id) || 'biz_blink_001';
         const params = [biz];
         if (showroom_id) params.push(showroom_id);
         if (search)      params.push(`%${search}%`);
+        if (cat_type)    params.push(`cat_type_${cat_type}`);
         params.push(parseInt(limit), parseInt(offset));
 
         // Proxy v48 Product Handler does all JOINs in-memory
@@ -502,7 +546,17 @@ router.get('/', async (req, res) => {
         let rows = allRows;
         if (!include_inactive || include_inactive === 'false') rows = rows.filter(p => p.active_status !== false);
         if (is_published !== undefined && is_published !== '')  rows = rows.filter(p => String(p.is_published) === is_published);
-        if (search)       { const t = search.toLowerCase(); rows = rows.filter(p => (p.product_name||'').toLowerCase().includes(t) || (p.model_no||'').toLowerCase().includes(t) || (p.brand_name||'').toLowerCase().includes(t) || (p.variant_sku||'').toLowerCase().includes(t)); }
+        if (search)       { 
+            const t = search.toLowerCase(); 
+            rows = rows.filter(p => 
+                (p.product_name||'').toLowerCase().includes(t) || 
+                (p.model_no||'').toLowerCase().includes(t) || 
+                (p.brand_name||'').toLowerCase().includes(t) || 
+                (p.variant_sku||'').toLowerCase().includes(t) ||
+                (p.barcode||'').toLowerCase().includes(t) ||
+                (p.upc_code||'').toLowerCase().includes(t)
+            ); 
+        }
         if (brand_id)      rows = rows.filter(p => p.brand_id      === brand_id);
         if (gender_id)     rows = rows.filter(p => p.gender_id     === gender_id);
         if (category_id)   rows = rows.filter(p => p.category_id   === category_id);
@@ -567,16 +621,17 @@ router.post('/', auth, async (req, res) => {
     const pid = `prod_${Date.now()}`;
     const {
         product_name, model_no, brand_id, category_id, gender_id,
-        frame_type_id, shape_id, material_id, mrp, selling_price, upc_code
+        frame_type_id, shape_id, material_id, mrp, selling_price, upc_code,
+        hsn_code, gst_rate
     } = req.body;
     try {
         const { rows } = await db.query(
             `INSERT INTO product (product_id, business_id, product_name, model_no, brand_id, category_id,
-             gender_id, frame_type_id, shape_id, material_id, mrp, selling_price, upc_code, is_published, active_status)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,false,true) RETURNING *`,
+             gender_id, frame_type_id, shape_id, material_id, mrp, selling_price, upc_code, hsn_code, gst_rate, is_published, active_status)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,false,true) RETURNING *`,
             [pid, biz, product_name, model_no, brand_id, category_id,
              gender_id, frame_type_id, shape_id, material_id,
-             parseFloat(mrp)||0, parseFloat(selling_price) || parseFloat(mrp) || 0, upc_code||null]
+             parseFloat(mrp)||0, parseFloat(selling_price) || parseFloat(mrp) || 0, upc_code||null, hsn_code||null, parseFloat(gst_rate)||12.00]
         );
         res.status(201).json({ success: true, data: rows[0] });
     } catch (err) {
@@ -768,20 +823,61 @@ router.post('/:id/variants', auth, async (req, res) => {
     }
 });
 
-// DELETE /api/products/:id — hard delete (cascades to variants + inventory)
+// DELETE /api/products/:id — Safe delete with dependency handling
 router.delete('/:id', auth, async (req, res) => {
+    const pid = req.params.id;
+    const biz = req.user.business_id;
+
     try {
         await db.query('BEGIN');
-        const { rows: variants } = await db.query(`SELECT variant_id FROM variant WHERE product_id=$1`, [req.params.id]);
-        for (const v of variants) {
-            await db.query(`DELETE FROM inventory WHERE variant_id=$1`, [v.variant_id]);
+
+        // 1. Delete transient dependencies (safe to remove)
+        const { rows: variants } = await db.query(`SELECT variant_id FROM variant WHERE product_id=$1`, [pid]);
+        const vids = variants.map(v => v.variant_id);
+
+        if (vids.length > 0) {
+            // Delete from inventory
+            await db.query(`DELETE FROM inventory WHERE variant_id = ANY($1)`, [vids]);
+            // Delete from cart/wishlist
+            await db.query(`DELETE FROM cart_items WHERE variant_id = ANY($1)`, [vids]);
+            await db.query(`DELETE FROM wishlist WHERE variant_id = ANY($1)`, [vids]);
         }
-        await db.query(`DELETE FROM variant WHERE product_id=$1`, [req.params.id]);
-        await db.query(`DELETE FROM product WHERE product_id=$1 AND business_id=$2`, [req.params.id, req.user.business_id]);
+
+        // 2. Identification phase: Check for transactional history
+        const { rows: history } = await db.query(`
+            SELECT 1 FROM order_item WHERE product_id = $1
+            UNION ALL
+            SELECT 1 FROM purchase_items WHERE product_id = $1
+            LIMIT 1
+        `, [pid]);
+
+        if (history.length > 0) {
+            // 3. Perform Soft Delete (Archive) if history exists
+            await db.query(`UPDATE product SET active_status=false, is_published=false WHERE product_id=$1 AND business_id=$2`, [pid, biz]);
+            await db.query(`UPDATE variant SET active_status=false WHERE product_id=$1`, [pid]);
+            await db.query('COMMIT');
+
+            return res.json({ 
+                success: true, 
+                soft_deleted: true, 
+                message: 'Product archived because it has associated Orders or Purchases.' 
+            });
+        }
+
+        // 4. Perform Hard Delete for safe products
+        // Delete variants
+        await db.query(`DELETE FROM variant WHERE product_id=$1`, [pid]);
+        // Delete product
+        const result = await db.query(`DELETE FROM product WHERE product_id=$1 AND business_id=$2`, [pid, biz]);
+        
+        if (result.rowCount === 0) {
+            throw new Error('Product not found or access denied');
+        }
+
         await db.query('COMMIT');
-        res.json({ success: true });
+        return res.json({ success: true, message: 'Product permanently removed' });
     } catch (err) {
-        await db.query('ROLLBACK');
+        if (db.query) await db.query('ROLLBACK');
         console.error('[product DELETE error]', err.message);
         res.status(500).json({ success: false, error: err.message });
     }

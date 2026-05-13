@@ -45,10 +45,70 @@ async function initStorefront() {
         fetchCatalog(),
         fetchCMS('home'),
         fetchCoupons(),
-        fetchSettings()
+        fetchSettings(),
+        fetchShowrooms()
     ]);
     if(State.customerToken) await fetchWishlist();
+    initAIChatbotWidget();
     router();
+}
+
+async function fetchShowrooms() {
+    try {
+        const res = await fetch('/api/public/showrooms').then(r => r.json());
+        if(res.success) {
+            State.showrooms = res.data || [];
+            renderFooterShowrooms();
+        }
+    } catch(e) { console.error('Showrooms Fetch Error', e); }
+}
+
+function renderFooterShowrooms() {
+    const wrap = document.getElementById('dynamic-footer-showrooms');
+    if (!wrap || !State.showrooms || State.showrooms.length === 0) return;
+    
+    let mainBizName = State.businessSettings?.general_settings?.business_name || 'Blink Opticals';
+    if (typeof State.businessSettings?.general_settings === 'string') {
+        try {
+            const parsed = JSON.parse(State.businessSettings.general_settings);
+            if (parsed.business_name) mainBizName = parsed.business_name;
+        } catch(e){}
+    }
+
+    wrap.innerHTML = State.showrooms.map(s => {
+        let contactsStr = s.contact_number || '';
+        if (s.secondary_contact) {
+            contactsStr += (contactsStr ? ' | ' : '') + s.secondary_contact;
+        }
+        let logoUrl = '/admin/img/logo.png';
+        if (State.businessSettings?.general_settings?.logo_url) {
+            logoUrl = State.businessSettings.general_settings.logo_url;
+        } else if (typeof State.businessSettings?.general_settings === 'string') {
+            try {
+                const parsed = JSON.parse(State.businessSettings.general_settings);
+                if (parsed.logo_url) logoUrl = parsed.logo_url;
+            } catch(e){}
+        }
+        
+        return `
+            <div class="showroom-footer-card" style="animation: fadeIn 0.5s ease-out;">
+                <img src="${logoUrl}" style="height:42px; margin-bottom:25px; display:block; object-fit:contain;" onerror="this.style.display='none'">
+                <h4 style="margin:0 0 12px 0; font-size:1.1rem; color:#111; font-weight:800;">${mainBizName} (${s.showroom_name})</h4>
+                <p style="margin:0; color:#777; font-size:0.95rem; line-height:1.8;">${s.address || ''}<br>${s.city || ''}${s.pincode ? ' – ' + s.pincode : ''}</p>
+                <div style="margin-top:20px; color:#777; font-size:0.95rem; line-height:1.8;">
+                    ${contactsStr ? `<span style="display:block;"><strong style="color:#111; font-weight:700;">Store Contacts:</strong> ${contactsStr}</span>` : ''}
+                    ${s.email ? `<span style="display:block;"><strong style="color:#111; font-weight:700;">E-mail:</strong> ${s.email}</span>` : `<span style="display:block;"><strong style="color:#111; font-weight:700;">E-mail:</strong> contact@blinkopticals.com</span>`}
+                </div>
+                ${s.google_maps_link || s.map_location_link ? `
+                <div style="margin-top:20px;">
+                    <a href="${s.google_maps_link || s.map_location_link}" target="_blank" style="color:#777; text-decoration:none; font-size:0.95rem; display:flex; align-items:center; gap:10px; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#777'">
+                        <i class="fas fa-map-marker-alt" style="font-size:1.2rem; color:var(--accent);"></i> Open in Google Maps
+                    </a>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
 }
 
 async function fetchCMS(slug) {
@@ -134,9 +194,145 @@ async function fetchSettings() {
         const res = await fetch('/api/public/settings-public').then(r => r.json());
         if(res.success) {
             State.businessSettings = res.data;
+            initMarketingPixels();
+            renderFooterSocial();
         }
     } catch(e) { console.error('Settings Fetch Error', e); }
 }
+
+function renderFooterSocial() {
+    const wrap = document.getElementById('dynamic-footer-social');
+    if (!wrap) return;
+    
+    let links = State.businessSettings?.social_links || {};
+    if (typeof links === 'string') {
+        try { links = JSON.parse(links); } catch(e){}
+    }
+
+    const defaultSocials = [
+        { key: 'facebook', icon: 'fab fa-facebook', url: links.facebook },
+        { key: 'instagram', icon: 'fab fa-instagram', url: links.instagram },
+        { key: 'twitter', icon: 'fab fa-twitter', url: links.twitter },
+        { key: 'pinterest', icon: 'fab fa-pinterest', url: links.pinterest },
+        { key: 'linkedin', icon: 'fab fa-linkedin', url: links.linkedin }
+    ];
+
+    const activeSocials = defaultSocials.filter(s => s.url && s.url.trim() !== '');
+
+    if (activeSocials.length > 0) {
+        wrap.innerHTML = activeSocials.map(s => `
+            <a href="${s.url}" target="_blank" style="color:#333; transition:0.3s; display:inline-block;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#333'" aria-label="${s.key}">
+                <i class="${s.icon}"></i>
+            </a>
+        `).join('');
+    } else {
+        wrap.innerHTML = `
+            <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-facebook"></i></a>
+            <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-instagram"></i></a>
+            <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-twitter"></i></a>
+            <a href="#" style="color:#333; transition:0.3s;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#333'"><i class="fab fa-linkedin"></i></a>
+        `;
+    }
+}
+
+function initMarketingPixels() {
+    try {
+        let pixels = State.businessSettings?.marketing_pixels;
+        if (!pixels) return;
+        if (typeof pixels === 'string') {
+            try { pixels = JSON.parse(pixels); } catch(e){}
+        }
+
+        // 1. Google Search Console Verification Tag
+        if (pixels.gsc_verification) {
+            let cleanStr = pixels.gsc_verification.replace(/^content=["']?|["']?$/g, '');
+            if (cleanStr.includes('content=')) {
+                cleanStr = cleanStr.split('content=')[1]?.replace(/["' />]/g, '') || cleanStr;
+            }
+            let meta = document.querySelector('meta[name="google-site-verification"]');
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.name = 'google-site-verification';
+                meta.content = cleanStr;
+                document.head.appendChild(meta);
+                console.log('[SEO] Google Search Console tag attached dynamically.');
+            } else {
+                meta.content = cleanStr;
+            }
+        }
+
+        // 2. Google Analytics 4 Injection
+        if (pixels.ga4_enabled && pixels.ga4_id) {
+            const gaId = pixels.ga4_id.trim();
+            if (!document.getElementById('ga4-script')) {
+                const script = document.createElement('script');
+                script.id = 'ga4-script';
+                script.async = true;
+                script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+                document.head.appendChild(script);
+
+                window.dataLayer = window.dataLayer || [];
+                window.gtag = function(){ dataLayer.push(arguments); };
+                window.gtag('js', new Date());
+                window.gtag('config', gaId, { send_page_view: false });
+                console.log(`[GA4] Initialized Measurement ID: ${gaId}`);
+            }
+        }
+
+        // 3. Meta Pixel Block Injection
+        if (pixels.meta_enabled && pixels.meta_pixel_id) {
+            const fbId = pixels.meta_pixel_id.trim();
+            if (!window.fbq) {
+                !function(f,b,e,v,n,t,s)
+                {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+                if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+                n.queue=[];t=b.createElement(e);t.async=!0;
+                t.src=v;s=b.getElementsByTagName(e)[0];
+                s.parentNode.insertBefore(t,s)}(window, document,'script',
+                'https://connect.facebook.net/en_US/fbevents.js');
+                
+                fbq('init', fbId);
+                console.log(`[Meta Pixel] Initialized Dataset ID: ${fbId}`);
+            }
+        }
+    } catch (err) {
+        console.error('[Marketing Telemetry Init Error]', err);
+    }
+}
+
+window.fireTelemetryEvent = function(eventType, payload = {}) {
+    try {
+        let pixels = State.businessSettings?.marketing_pixels;
+        if (typeof pixels === 'string') { try { pixels = JSON.parse(pixels); } catch(e){} }
+        
+        // 1. Meta Pixel Dispatches
+        if (pixels?.meta_enabled && window.fbq) {
+            if (eventType === 'PageView') {
+                fbq('track', 'PageView');
+            } else {
+                fbq('track', eventType, payload);
+            }
+            console.log(`[Meta Pixel Dispatch] ${eventType}`, payload);
+        }
+
+        // 2. GA4 Dispatches
+        if (pixels?.ga4_enabled && window.gtag && pixels?.ga4_id) {
+            const gaMap = {
+                'PageView': 'page_view',
+                'ViewContent': 'view_item',
+                'AddToCart': 'add_to_cart',
+                'Purchase': 'purchase'
+            };
+            const gaEvent = gaMap[eventType] || eventType.toLowerCase();
+            gtag('event', gaEvent, {
+                send_to: pixels.ga4_id,
+                ...payload
+            });
+            console.log(`[GA4 Dispatch] ${gaEvent}`, payload);
+        }
+    } catch (e) {}
+};
 
 async function fetchCoupons() {
     try {
@@ -167,6 +363,7 @@ function router() {
     else if (hash === '#/checkout') renderCheckout(app);
     else if (hash.startsWith('#/account')) renderAccount(app);
     else if (hash === '#/wishlist') renderWishlist(app);
+    else if (hash === '#/locations') renderLocations(app);
     else renderHome(app);
 
     // Update Meta Title from CMS if on Home
@@ -178,6 +375,11 @@ function router() {
     
     // Trigger scroll animations after render
     setTimeout(observeReveals, 100);
+
+    // Broadcast standard telemetry page view triggers
+    setTimeout(() => {
+        window.fireTelemetryEvent('PageView', { page_path: hash });
+    }, 300);
 }
 
 // ─── RENDERING ───
@@ -431,6 +633,51 @@ function renderShop(app, params = new URLSearchParams()) {
     const brandData = activeBrandSlug ? State.masterData.brands.find(b => b.slug === activeBrandSlug) : null;
     const bannerUrl = brandData?.hero_url;
 
+    // 3. Dynamic Catalog Taxonomy SEO Hydration
+    let activeTaxonomyName = "";
+    let activeTaxonomyDesc = "";
+    if (brandData) {
+        activeTaxonomyName = brandData.seo_title || brandData.name;
+        activeTaxonomyDesc = brandData.seo_description || brandData.description;
+    } else if (params.get('category')) {
+        const catSlug = params.get('category');
+        const catObj = State.masterData.categories.find(c => c.slug === catSlug || c.id === catSlug);
+        if (catObj) {
+            activeTaxonomyName = catObj.seo_title || `${catObj.name} Selection`;
+            activeTaxonomyDesc = catObj.seo_description || `Shop high-quality ${catObj.name} collections optimized for crystal clarity.`;
+        }
+    } else if (params.get('gender')) {
+        const genSlug = params.get('gender');
+        const genObj = State.masterData.genders.find(g => g.slug === genSlug || g.id === genSlug);
+        if (genObj) {
+            activeTaxonomyName = genObj.seo_title || `${genObj.name} Designer Frames`;
+            activeTaxonomyDesc = genObj.seo_description || `Browse state-of-the-art eyewear curated specifically for ${genObj.name}.`;
+        }
+    }
+
+    if (activeTaxonomyName) {
+        document.title = `${activeTaxonomyName} | BlinkOpticals`;
+        let metaDesc = document.querySelector('meta[name="description"]');
+        if (!metaDesc) { metaDesc = document.createElement('meta'); metaDesc.name = 'description'; document.head.appendChild(metaDesc); }
+        if (activeTaxonomyDesc) metaDesc.content = activeTaxonomyDesc;
+
+        document.querySelectorAll('script[type="application/ld+json"]').forEach(sc => sc.remove());
+        try {
+            const ldCollection = {
+                "@context": "https://schema.org",
+                "@type": "CollectionPage",
+                "name": activeTaxonomyName,
+                "description": activeTaxonomyDesc || `Official BlinkOpticals ${activeTaxonomyName} digital showroom.`,
+                "url": window.location.href,
+                "numberOfItems": filtered.length
+            };
+            const scBlock = document.createElement('script');
+            scBlock.type = 'application/ld+json';
+            scBlock.text = JSON.stringify(ldCollection);
+            document.head.appendChild(scBlock);
+        } catch(e){}
+    }
+
     app.innerHTML = `
         ${bannerUrl ? `
             <div class="brand-hero reveal" style="background: url('${bannerUrl}') center/cover; height:450px; position:relative; width:100%; display:flex; align-items:center; justify-content:center; margin-bottom:60px; overflow:hidden;">
@@ -566,6 +813,74 @@ function renderShop(app, params = new URLSearchParams()) {
 function renderProduct(app, id) {
     const p = State.products.find(x => x.id === id) || State.products[0];
     State.viewingProduct = p;
+
+    if (p) {
+        // 1. Title Swapping
+        document.title = p.seo_title || `${p.name} | BlinkOpticals`;
+        
+        // 2. Dynamic Description Tag
+        let metaDesc = document.querySelector('meta[name="description"]');
+        if (!metaDesc) {
+            metaDesc = document.createElement('meta');
+            metaDesc.name = 'description';
+            document.head.appendChild(metaDesc);
+        }
+        metaDesc.content = p.seo_description || p.short_desc || `Order ${p.name} directly from BlinkOpticals. Guaranteed original finish, custom diagnostic fitting, and home delivery available.`;
+
+        // 3. Clear existing Schema blocks to guarantee strict single-product node output
+        document.querySelectorAll('script[type="application/ld+json"]').forEach(sc => sc.remove());
+
+        // 4. Inject JSON-LD
+        try {
+            let addImgs = [];
+            if (typeof p.additional_images === 'string') {
+                try { addImgs = JSON.parse(p.additional_images); } catch(e){}
+            } else if (Array.isArray(p.additional_images)) { addImgs = p.additional_images; }
+            
+            const jsonLd = {
+                "@context": "https://schema.org/",
+                "@type": "Product",
+                "name": p.name,
+                "image": [p.image, ...addImgs].filter(Boolean),
+                "description": p.seo_description || p.short_desc || p.desc || p.name,
+                "sku": p.sku || p.model_no || p.id,
+                "mpn": p.model_no || p.id,
+                "brand": {
+                    "@type": "Brand",
+                    "name": p.brand || "BlinkOpticals"
+                },
+                "offers": {
+                    "@type": "Offer",
+                    "url": window.location.href,
+                    "priceCurrency": "INR",
+                    "price": parseFloat(p.price || p.mrp || 0),
+                    "itemCondition": "https://schema.org/NewCondition",
+                    "availability": "https://schema.org/InStock",
+                    "seller": {
+                        "@type": "Organization",
+                        "name": "BlinkOpticals"
+                    }
+                }
+            };
+            const scBlock = document.createElement('script');
+            scBlock.type = 'application/ld+json';
+            scBlock.text = JSON.stringify(jsonLd);
+            document.head.appendChild(scBlock);
+            console.log(`[SEO Client Engine] Rendered schema.org/Product block for ID: ${p.id}`);
+        } catch(e) {}
+    }
+
+    setTimeout(() => {
+        if (p) {
+            window.fireTelemetryEvent('ViewContent', {
+                content_ids: [p.id],
+                content_name: p.name,
+                content_type: 'product',
+                value: parseFloat(p.price || 0),
+                currency: 'INR'
+            });
+        }
+    }, 400);
 
     let additionalImgs = [];
     if (p.additional_images) {
@@ -1560,6 +1875,94 @@ function renderWishlist(app) {
     `;
 }
 
+function renderLocations(app) {
+    let mainBizName = State.businessSettings?.general_settings?.business_name || 'Blink Opticals';
+    if (typeof State.businessSettings?.general_settings === 'string') {
+        try {
+            const parsed = JSON.parse(State.businessSettings.general_settings);
+            if (parsed.business_name) mainBizName = parsed.business_name;
+        } catch(e){}
+    }
+
+    const showrooms = State.showrooms || [];
+    
+    app.innerHTML = `
+        <div class="container section reveal" style="min-height: 70vh; padding-top: 60px;">
+            <div style="text-align:center; max-width:700px; margin:0 auto 60px;">
+                <span style="font-size:0.75rem; font-weight:800; color:var(--accent); text-transform:uppercase; letter-spacing:2px; display:block; margin-bottom:12px;">ENTERPRISE PRESENCE</span>
+                <h1 style="font-size:3rem; font-weight:800; letter-spacing:-1.5px; margin:0 0 15px 0; color:var(--text);">${mainBizName} Locations</h1>
+                <p style="color:var(--text-sec); font-size:1.1rem; line-height:1.6;">Visit our fully immersive state-of-the-art vision laboratories and try on exclusive high-fashion designer collections with certified professional assistance.</p>
+            </div>
+            
+            ${showrooms.length === 0 ? `
+                <div style="text-align:center; padding:60px; background:var(--surface); border-radius:20px; border:1px solid var(--border);">
+                    <i class="fas fa-store-slash" style="font-size:3rem; color:var(--text-sec); opacity:0.4; margin-bottom:20px;"></i>
+                    <h3 style="font-size:1.3rem; margin-bottom:10px;">Exploring Premium Showrooms</h3>
+                    <p style="color:var(--text-sec);">Our network data is syncing. Please check back shortly or reach out to our primary central helpdesk.</p>
+                </div>
+            ` : `
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:40px;">
+                    ${showrooms.map((s, idx) => {
+                        let contactsStr = s.contact_number || '';
+                        if (s.secondary_contact) {
+                            contactsStr += (contactsStr ? ' | ' : '') + s.secondary_contact;
+                        }
+                        const mapLink = s.google_maps_link || s.map_location_link;
+                        
+                        return `
+                            <div class="location-card reveal delay-${idx % 5}" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:40px; transition:all 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow:0 10px 30px rgba(0,0,0,0.03);" onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='var(--accent)';" onmouseout="this.style.transform='none'; this.style.borderColor='var(--border)';">
+                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:25px;">
+                                    <div style="width:50px; height:50px; border-radius:14px; background:var(--accent-light, rgba(31,172,99,0.1)); display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:1.3rem;">
+                                        <i class="fas fa-store"></i>
+                                    </div>
+                                    ${s.active_status ? `<span style="font-size:0.7rem; font-weight:800; background:rgba(31,172,99,0.1); color:#1fac63; padding:4px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:1px;">Open Today</span>` : ''}
+                                </div>
+                                
+                                <h3 style="font-size:1.4rem; font-weight:800; color:var(--text); margin:0 0 15px 0;">${s.showroom_name}</h3>
+                                <p style="color:var(--text-sec); font-size:0.95rem; line-height:1.7; margin:0 0 25px 0; min-height:50px;">
+                                    <i class="fas fa-map-pin" style="color:var(--accent); margin-right:8px; width:16px;"></i>
+                                    ${s.address || ''}, ${s.city || ''}${s.pincode ? ' - ' + s.pincode : ''}
+                                </p>
+                                
+                                <div style="border-top:1px solid var(--border); padding-top:20px; display:flex; flex-direction:column; gap:12px; font-size:0.9rem;">
+                                    ${contactsStr ? `
+                                        <div style="display:flex; align-items:flex-start; gap:10px; color:var(--text);">
+                                            <i class="fas fa-phone-alt" style="color:var(--text-sec); margin-top:3px; width:16px;"></i>
+                                            <span style="font-weight:600;">${contactsStr}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${s.email ? `
+                                        <div style="display:flex; align-items:center; gap:10px; color:var(--text);">
+                                            <i class="fas fa-envelope" style="color:var(--text-sec); width:16px;"></i>
+                                            <span>${s.email}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${s.manager_name ? `
+                                        <div style="display:flex; align-items:center; gap:10px; color:var(--text-sec); font-size:0.85rem;">
+                                            <i class="fas fa-user-tie" style="width:16px;"></i>
+                                            <span>Managed by ${s.manager_name}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                
+                                ${mapLink ? `
+                                    <div style="margin-top:30px;">
+                                        <a href="${mapLink}" target="_blank" class="btn-lux" style="width:100%; font-size:0.85rem; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                                            <i class="fas fa-directions"></i> Get Instant Directions
+                                        </a>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `}
+        </div>
+    `;
+    
+    setTimeout(observeReveals, 50);
+}
+
 // ─── CART LOGIC ───
 function buildProductCard(p, index) {
     const delayS = (index % 8) * 0.1;
@@ -1708,6 +2111,16 @@ window.addToCart = function(id) {
     
     saveCart();
     updateCartCount();
+
+    // Fire AddToCart Telemetry conversion signal
+    window.fireTelemetryEvent('AddToCart', {
+        content_ids: [p.id],
+        content_name: p.name,
+        content_type: 'product',
+        value: roundedPrice,
+        currency: 'INR'
+    });
+
     openCartSidebar();
 };
 
@@ -1930,7 +2343,7 @@ window.processCheckout = async function() {
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + State.customerToken },
                     body: JSON.stringify({ order_id: orderData.order_id, payment_id: response.razorpay_payment_id })
                 });
-                renderSuccessScreen();
+                renderSuccessScreen(finalTotal);
             },
             "prefill": {
                 "name": State.customerProfile?.full_name,
@@ -1952,8 +2365,20 @@ window.processCheckout = async function() {
     }
 };
 
-function renderSuccessScreen() {
+function renderSuccessScreen(finalTotal = 0) {
     const app = document.getElementById('store-app');
+    
+    // Broadcast checkout order tracking conversion signal
+    setTimeout(() => {
+        window.fireTelemetryEvent('Purchase', {
+            value: finalTotal,
+            currency: 'INR',
+            num_items: State.cart.reduce((sum, item) => sum + item.qty, 0),
+            content_ids: State.cart.map(i => i.id),
+            contents: State.cart.map(i => ({ id: i.id, quantity: i.qty }))
+        });
+    }, 400);
+
     State.cart = [];
     saveCart();
     updateCartCount();
@@ -2217,4 +2642,404 @@ function renderInteractiveGrid(content) {
             </div>
         </div>
     </section>`;
+}
+
+/* ── AI VIRTUAL ASSISTANT CHATBOT WIDGET ── */
+let chatWidgetState = {
+    isOpen: false,
+    sessionId: localStorage.getItem('blink_chat_session') || '',
+    messages: [],
+    pollingTimer: null,
+    customerName: State.customerProfile?.name || ''
+};
+
+function initAIChatbotWidget() {
+    if (document.getElementById('ai-chatbot-root')) return;
+
+    // Attach styling elements
+    const style = document.createElement('style');
+    style.innerHTML = `
+        #ai-chatbot-root {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 99999;
+            font-family: inherit;
+        }
+        .chatbot-fab {
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #7928ca);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .chatbot-fab:hover {
+            transform: scale(1.08) rotate(5deg);
+            box-shadow: 0 14px 30px rgba(121, 40, 202, 0.4);
+        }
+        .chatbot-fab i { font-size: 1.6rem; }
+        
+        .chatbot-window {
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 380px;
+            height: 560px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform-origin: bottom right;
+            transform: scale(0);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .chatbot-window.open {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .chatbot-header {
+            background: linear-gradient(135deg, #111, #222);
+            color: #fff;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .chatbot-header-info { display: flex; align-items: center; gap: 12px; }
+        .chatbot-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent), #ff007a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        .chatbot-title { font-weight: 800; font-size: 1rem; line-height: 1.2; margin:0; }
+        .chatbot-status { font-size: 0.75rem; color: #aaa; display: flex; align-items: center; gap: 5px; margin-top:2px; }
+        .chatbot-status::before {
+            content: '';
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse-green 2s infinite;
+        }
+        .chatbot-close {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .chatbot-close:hover { background: rgba(255,255,255,0.2); }
+        
+        .chatbot-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(250, 250, 250, 0.4);
+        }
+        .chatbot-body::-webkit-scrollbar { width: 5px; }
+        .chatbot-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        
+        .chat-msg {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-break: break-word;
+            animation: msgFadeIn 0.3s ease-out;
+        }
+        .chat-msg.bot {
+            align-self: flex-start;
+            background: #fff;
+            color: #111;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background: #111;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .chat-msg.agent {
+            align-self: flex-start;
+            background: linear-gradient(135deg, #0d9488, #0f766e);
+            color: #fff;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 4px 15px rgba(13, 148, 136, 0.2);
+        }
+        .msg-time { font-size: 0.65rem; opacity: 0.6; margin-top: 5px; text-align: right; display: block; }
+        
+        .chatbot-chips {
+            padding: 0 20px 12px 20px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .chatbot-chips::-webkit-scrollbar { display: none; }
+        .chat-chip {
+            background: #fff;
+            border: 1px solid #ddd;
+            color: #333;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .chat-chip:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px);
+        }
+        
+        .chatbot-footer {
+            padding: 12px 20px;
+            background: #fff;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .chatbot-input {
+            flex: 1;
+            border: none;
+            background: #f4f4f4;
+            height: 42px;
+            padding: 0 16px;
+            border-radius: 21px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.2s;
+        }
+        .chatbot-input:focus { background: #eee; }
+        .chatbot-send {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .chatbot-send:hover { transform: scale(1.05); background: #111; }
+        
+        @keyframes msgFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        
+        @media (max-width: 480px) {
+            .chatbot-window {
+                width: calc(100vw - 30px);
+                height: 480px;
+                bottom: 75px;
+                right: -15px;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Build structure
+    const root = document.createElement('div');
+    root.id = 'ai-chatbot-root';
+    root.innerHTML = `
+        <div class="chatbot-window" id="chatbot-window">
+            <div class="chatbot-header">
+                <div class="chatbot-header-info">
+                    <div class="chatbot-avatar"><i class="fas fa-comment-dots"></i></div>
+                    <div>
+                        <h4 class="chatbot-title">Blink AI Concierge</h4>
+                        <span class="chatbot-status">Online • Instant Support</span>
+                    </div>
+                </div>
+                <button class="chatbot-close" onclick="toggleAIChatbot()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="chatbot-body" id="chatbot-body">
+                <div class="chat-msg bot">
+                    Hello! I am Blink exclusive visual simulation & support advisor. How can I delight your eyewear expectations today?
+                    <span class="msg-time">Just now</span>
+                </div>
+            </div>
+            
+            <div class="chatbot-chips">
+                <div class="chat-chip" onclick="sendAIChatChip('📦 Track My Order')">📦 Track Order</div>
+                <div class="chat-chip" onclick="sendAIChatChip('❓ Return Policy')">❓ Return Policy</div>
+                <div class="chat-chip" onclick="sendAIChatChip('📍 Showroom Directions')">📍 Showroom Map</div>
+                <div class="chat-chip" onclick="sendAIChatChip('💬 Hand over to Live Staff')">💬 Human Agent</div>
+            </div>
+            
+            <form class="chatbot-footer" onsubmit="submitAIChatMessage(event)">
+                <input type="text" class="chatbot-input" id="chatbot-input" placeholder="Ask anything about our frames..." autocomplete="off">
+                <button type="submit" class="chatbot-send"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+        
+        <div class="chatbot-fab" onclick="toggleAIChatbot()" title="Chat with Blink AI Assistant">
+            <i class="fas fa-robot"></i>
+        </div>
+    `;
+    document.body.appendChild(root);
+
+    // If session ID stored, try pulling history silently
+    if (chatWidgetState.sessionId) {
+        pollAIChatMessages();
+    }
+}
+
+function toggleAIChatbot() {
+    const win = document.getElementById('chatbot-window');
+    if (!win) return;
+    chatWidgetState.isOpen = !chatWidgetState.isOpen;
+    if (chatWidgetState.isOpen) {
+        win.classList.add('open');
+        document.getElementById('chatbot-input')?.focus();
+        // Start automatic sync interval
+        if (!chatWidgetState.pollingTimer) {
+            chatWidgetState.pollingTimer = setInterval(pollAIChatMessages, 3000);
+        }
+    } else {
+        win.classList.remove('open');
+        if (chatWidgetState.pollingTimer) {
+            clearInterval(chatWidgetState.pollingTimer);
+            chatWidgetState.pollingTimer = null;
+        }
+    }
+}
+
+function sendAIChatChip(text) {
+    const inp = document.getElementById('chatbot-input');
+    if (inp) {
+        inp.value = text;
+        submitAIChatMessage({ preventDefault: () => {} });
+    }
+}
+
+async function submitAIChatMessage(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const inp = document.getElementById('chatbot-input');
+    if (!inp || !inp.value.trim()) return;
+
+    const msgText = inp.value.trim();
+    inp.value = '';
+
+    // Render optimistic user bubble
+    appendAIChatBubble('user', msgText, new Date());
+
+    try {
+        const payload = {
+            session_id: chatWidgetState.sessionId || null,
+            message: msgText,
+            customer_name: State.customerProfile?.name || 'Storefront Visitor',
+            customer_mobile: State.customerProfile?.mobile || State.tmpLoginMobile || null
+        };
+
+        const res = await fetch('/api/chat/message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(r => r.json());
+
+        if (res.success) {
+            if (!chatWidgetState.sessionId) {
+                chatWidgetState.sessionId = res.session_id;
+                localStorage.setItem('blink_chat_session', res.session_id);
+            }
+            if (res.reply) {
+                // Render Bot Reply
+                appendAIChatBubble('bot', res.reply, new Date());
+            } else if (res.status === 'agent_active') {
+                // Silently wait for operator override poll
+            }
+        }
+    } catch(err) { console.error('Chat send pipeline failed', err); }
+}
+
+function appendAIChatBubble(sender, text, dateObj) {
+    const body = document.getElementById('chatbot-body');
+    if (!body) return;
+
+    const timeStr = dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+    // Format markdown bolds to clean elements if present
+    const cleanText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+
+    const d = document.createElement('div');
+    d.className = `chat-msg ${sender}`;
+    d.innerHTML = `${cleanText}<span class="msg-time">${timeStr}</span>`;
+    body.appendChild(d);
+    body.scrollTop = body.scrollHeight;
+}
+
+async function pollAIChatMessages() {
+    if (!chatWidgetState.sessionId) return;
+    try {
+        const res = await fetch(`/api/chat/history/${chatWidgetState.sessionId}`).then(r => r.json());
+        if (res.success && res.data) {
+            const body = document.getElementById('chatbot-body');
+            if (!body) return;
+
+            // Simple rebuild if total arrays changed to keep completely synchronized
+            // Keep first greeting message intact
+            const currentChildren = body.querySelectorAll('.chat-msg').length;
+            // +1 because default greeting is not in db
+            if (res.data.length + 1 !== currentChildren) {
+                body.innerHTML = `
+                    <div class="chat-msg bot">
+                        Hello! I am Blink exclusive visual simulation & support advisor. How can I delight your eyewear expectations today?
+                        <span class="msg-time">System Handshake</span>
+                    </div>
+                `;
+                res.data.forEach(m => {
+                    appendAIChatBubble(m.sender, m.message, new Date(m.created_at));
+                });
+            }
+        }
+    } catch(e){}
 }

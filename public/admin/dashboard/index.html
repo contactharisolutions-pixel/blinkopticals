@@ -8,8 +8,12 @@
 <link rel="stylesheet" href="/admin/css/erp.css">
 </head>
 <body>
-
 <aside class="sidebar" id="sidebar">
+<script>
+  if (window.location.search.includes('iframe=true')) {
+    document.write('<style>.sidebar, .topbar { display: none !important; } .main { margin-left: 0 !important; padding-top: 0 !important; height: 100vh !important; } .content { margin-top: 0 !important; padding: 20px !important; }</style>');
+  }
+</script>
   <div class="sidebar-logo" style="padding: 20px 24px; padding-bottom: 0;">
     <img src="/admin/img/logo.png" alt="Blink Opticals" style="max-height: 38px; width: auto; object-fit: contain; margin-left: -5px;" />
   </div>
@@ -22,6 +26,7 @@
     <div class="nav-group">Catalog</div>
     <a class="nav-item" data-view="products">👓 Standard Entry</a>
     <a class="nav-item" data-view="ecommerce">🛍️ Ecommerce Products</a>
+    <a class="nav-item" data-view="logistics">🚚 Logistics & Shipping</a>
     <a class="nav-item" data-view="bulk_import">📤 Bulk Import</a>
     <a class="nav-item" data-view="ai_filler">🤖 AI Data Filler</a>
     <a class="nav-item" data-view="inventory">📦 Inventory</a>
@@ -34,7 +39,13 @@
     <a class="nav-item" data-view="business">🏭 Business Setup</a>
     <a class="nav-item" data-view="master">🗄️ Master Data</a>
     <div class="nav-group">Financials</div>
+    <a class="nav-item" data-view="invoices">🧾 Invoices Management</a>
     <a class="nav-item" data-view="accounting">💰 Accounting</a>
+
+    <div class="nav-group">Returns & Shrinkage</div>
+    <a class="nav-item" data-view="return_customer">↩️ Return from Customer</a>
+    <a class="nav-item" data-view="return_vendor">📤 Return to Vendor</a>
+    <a class="nav-item" data-view="damaged_goods">💥 Damaged Goods</a>
 
     <div class="nav-group">Customers</div>
 
@@ -108,11 +119,16 @@
     <div id="view-cms" class="view"></div>
 
     <div id="view-ecommerce" class="view"></div>
+    <div id="view-logistics" class="view"></div>
     <div id="view-bulk_import" class="view"></div>
     <div id="view-ai_filler" class="view"></div>
     <div id="view-accounting" class="view"></div>
     <div id="view-purchase" class="view"></div>
     <div id="view-reports" class="view"></div>
+    <div id="view-invoices" class="view"></div>
+    <div id="view-return_customer" class="view"></div>
+    <div id="view-return_vendor" class="view"></div>
+    <div id="view-damaged_goods" class="view"></div>
 
   </div>
 </div>
@@ -131,11 +147,15 @@
 <!-- External Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<script src="/admin/js/erp-core.js?v=MARKETING_V2"></script>
+<script src="/admin/js/erp-core.js?v=ENTERPRISE_V3"></script>
 <script src="/admin/js/erp-media.js?v=MARKETING_V2"></script>
 <script src="/admin/js/erp-cms.js?v=CMS_V1"></script>
 <script src="/admin/js/erp-views.js?v=MARKETING_V2"></script>
 <script src="/admin/js/erp-ai-filler.js?v=MARKETING_V2"></script>
+<script src="/admin/js/erp-invoices.js?v=UNIVERSAL_SEARCH_V3"></script>
+<script src="/admin/js/erp-accounting.js?v=ACCOUNTING_WIRED_V4"></script>
+<script src="/admin/js/erp-logistics.js?v=LOGISTICS_V1"></script>
 </body>
 </html>

@@ -40,7 +40,7 @@ async function fetch(table, biz, extra) {
     let q = supabase.from(table).select('*');
     if (biz) q = q.eq('business_id', biz);
     if (extra) extra(q);
-    const { data, error } = await q.limit(500);
+    const { data, error } = await q.limit(10000); // Increased limit to prevent truncation in large shops
     if (error) console.warn(`[DB] fetch(${table}):`, error.message);
     return data || [];
 }
@@ -61,7 +61,7 @@ module.exports = {
             // ─────────────────────────────────────────────────────────────────
 
             // ── 1. Showroom KPI Dashboard (GROUP BY showroom) ──────────────
-            if (isMain(sql, 'showroom') && lo.includes('group by')) {
+            if (lo.startsWith('select') && isMain(sql, 'showroom') && lo.includes('group by')) {
                 const [showrooms, orders, inventory, products] = await Promise.all([
                     fetch('showroom', biz), fetch('customer_order', biz), fetch('inventory', biz),
                     supabase.from('product').select('product_id,base_price,mrp').eq('business_id', biz).then(r => r.data || [])
@@ -84,7 +84,7 @@ module.exports = {
             }
 
             // ── 2. Analytics by Brand / Category / Gender ──────────────────
-            if (lo.includes('from brands b') || lo.includes('from categories c') || lo.includes('from genders g')) {
+            if (lo.startsWith('select') && (lo.includes('from brands b') || lo.includes('from categories c') || lo.includes('from genders g'))) {
                 const tbl = lo.includes('from brands') ? 'brands' : lo.includes('from categories') ? 'categories' : 'genders';
                 const pfx = tbl === 'brands' ? 'brand' : tbl === 'categories' ? 'category' : 'gender';
                 const [entities, products, orders, items, inventory] = await Promise.all([
@@ -111,7 +111,7 @@ module.exports = {
             }
 
             // ── 3. Order Handler ────────────────────────────────────────────
-            if (isMain(sql, 'customer_order')) {
+            if (lo.startsWith('select') && isMain(sql, 'customer_order')) {
                 const orders = await fetch('customer_order', biz);
 
                 // Aggregation
@@ -157,8 +157,68 @@ module.exports = {
                 return { rows: rows.slice(0, 100) };
             }
 
-            // ── 4. Inventory Handler ────────────────────────────────────────
-            if (isMain(sql, 'inventory')) {
+            // ── 4. Stock Transfer Handler ──────────────────────────────────
+            if (lo.startsWith('select') && isMain(sql, 'stock_transfer')) {
+                const [transfers, products, variants, showrooms, business] = await Promise.all([
+                    fetch('stock_transfer', biz),
+                    fetch('product', biz),
+                    supabase.from('variant').select('variant_id,product_id,sku,barcode').limit(5000).then(r => r.data || []),
+                    fetch('showroom', biz),
+                    supabase.from('business').select('*').eq('business_id', biz).single().then(r => r.data || {})
+                ]);
+
+                const pMap = Object.fromEntries(products.map(p => [p.product_id, p]));
+                const vMap = Object.fromEntries(variants.map(v => [v.variant_id, v]));
+                const sMap = Object.fromEntries(showrooms.map(s => [s.showroom_id, s]));
+
+                let rows = transfers.map(t => {
+                    const v = vMap[t.variant_id] || {};
+                    const p = pMap[v.product_id] || pMap[t.product_id] || {};
+                    const fs = sMap[t.from_showroom_id] || {};
+                    const ts = sMap[t.to_showroom_id]   || {};
+                    return {
+                        ...t,
+                        product_id:   p.product_id   || t.product_id || v.product_id,
+                        product_name: p.product_name || 'Unknown Item',
+                        sku:          v.sku || '—',
+                        barcode:      v.barcode || '',
+                        from_name:    fs.showroom_name || 'Source Store',
+                        from_address: fs.address || '',
+                        from_gstin:   fs.gstin   || '',
+                        from_mobile:  fs.mobile  || '',
+                        to_name:      ts.showroom_name || 'Destination',
+                        to_address:   ts.address || '',
+                        to_gstin:     ts.gstin   || '',
+                        to_mobile:    ts.mobile  || '',
+                        business_title: business.title || 'Blink Opticals',
+                        logo_url:       business.logo_url || '',
+                        status:         t.status ? t.status.charAt(0).toUpperCase() + t.status.slice(1) : 'Pending',
+                        requested_by_name: 'Admin'
+                    };
+                });
+
+                // Apply logic-based filters from SQL / Params
+                const idFilter = params.find(p => typeof p === 'string' && p.startsWith('trn_'));
+                if (idFilter) rows = rows.filter(t => t.transfer_id === idFilter);
+
+                const statusP = params.find(p => ['Pending','Shipped','Received','Cancelled'].includes(p));
+                if (statusP) rows = rows.filter(t => t.status === statusP);
+
+                const searchP = params.find(p => typeof p === 'string' && p.includes('%'));
+                if (searchP) {
+                    const t = searchP.replace(/%/g, '').toLowerCase();
+                    rows = rows.filter(r => 
+                        (r.product_name||'').toLowerCase().includes(t) || 
+                        (r.sku||'').toLowerCase().includes(t) ||
+                        (r.transfer_id||'').toLowerCase().includes(t)
+                    );
+                }
+
+                return { rows: rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) };
+            }
+
+            // ── 5. Inventory Handler ────────────────────────────────────────
+            if (lo.startsWith('select') && isMain(sql, 'inventory')) {
                 const inv = await fetch('inventory', biz);
 
                 // Count queries (KPI cards)
@@ -170,7 +230,7 @@ module.exports = {
                 // Full list — fetch all enrichment tables in parallel
                 const [products, variants, showrooms, brands] = await Promise.all([
                     fetch('product', biz),
-                    supabase.from('variant').select('variant_id,product_id,sku,barcode,color_code,size_code,color,frame_color_id').then(r => r.data || []),
+                    supabase.from('variant').select('variant_id,product_id,sku,barcode,color_code,size_code,color,frame_color_id').limit(10000).then(r => r.data || []),
                     fetch('showroom', biz),
                     fetch('brands', biz)
                 ]);
@@ -226,11 +286,11 @@ module.exports = {
                 }
 
                 rows.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
-                return { rows: rows.slice(0, 500) };
+                return { rows: rows.slice(0, 1000) };
             }
 
             // ── 5. Eye Test / Clinic Handler ────────────────────────────────
-            if (lo.includes('from "eye_test"') || lo.includes('from eye_test')) {
+            if (lo.startsWith('select') && (lo.includes('from "eye_test"') || lo.includes('from eye_test'))) {
                 const tests = await fetch('eye_test', biz);
                 if (lo.includes('count(') || lo.includes('count(*)')) {
                     const now = new Date();
@@ -243,7 +303,7 @@ module.exports = {
             }
 
             // ── 6. Repair Handler ───────────────────────────────────────────
-            if (lo.includes('from "repair"') || isMain(sql, 'repair')) {
+            if (lo.startsWith('select') && (lo.includes('from "repair"') || isMain(sql, 'repair'))) {
                 const repairs = await fetch('repair', biz);
                 if (lo.includes('count(') || lo.includes('sum(')) {
                     const now = new Date(); const cutoff30 = new Date(now); cutoff30.setDate(now.getDate() - 30);
@@ -255,7 +315,7 @@ module.exports = {
             }
 
             // ── 7. Customer Handler ─────────────────────────────────────────
-            if (isMain(sql, 'customer')) {
+            if (lo.startsWith('select') && isMain(sql, 'customer')) {
                 const [customers, orders, loyalty] = await Promise.all([fetch('customer', biz), supabase.from('customer_order').select('customer_id,total_amount').eq('business_id', biz).then(r => r.data || []), fetch('loyalty', biz)]);
                 const loyMap = Object.fromEntries(loyalty.map(l => [l.customer_id, l]));
                 let rows = customers.map(c => {
@@ -274,7 +334,7 @@ module.exports = {
             }
 
             // ── 8. Loyalty Handler ──────────────────────────────────────────
-            if (isMain(sql, 'loyalty')) {
+            if (lo.startsWith('select') && isMain(sql, 'loyalty')) {
                 const [loyalty, customers] = await Promise.all([fetch('loyalty', biz), fetch('customer', biz)]);
                 if (lo.includes('group by tier')) {
                     const tiers = {}; loyalty.forEach(l => { tiers[l.tier] = (tiers[l.tier] || 0) + 1; });
@@ -285,7 +345,7 @@ module.exports = {
             }
 
             // ── 9. CRM Leads Handler ────────────────────────────────────────
-            if (isMain(sql, '"lead"') || isMain(sql, 'lead')) {
+            if (lo.startsWith('select') && (isMain(sql, '"lead"') || isMain(sql, 'lead'))) {
                 const leads = await fetch('lead', biz);
                 if (lo.includes('group by status') || lo.includes('count(*)')) {
                     if (lo.includes('group by status')) {
@@ -309,14 +369,14 @@ module.exports = {
             }
 
             // ── 10. Follow-up Handler ───────────────────────────────────────
-            if (isMain(sql, 'follow_up')) {
+            if (lo.startsWith('select') && isMain(sql, 'follow_up')) {
                 const [followups, leads] = await Promise.all([fetch('follow_up', biz), fetch('lead', biz)]);
                 const lMap = Object.fromEntries(leads.map(l => [l.lead_id, l]));
                 return { rows: followups.map(f => ({ ...f, lead_name: lMap[f.lead_id]?.name || '—', mobile: lMap[f.lead_id]?.mobile || '' })).sort((a, b) => new Date(a.followup_date) - new Date(b.followup_date)).slice(0, 100) };
             }
 
             // ── 10. Product Handler (enriched with brand, variant, inventory) ──
-            if (isMain(sql, 'product')) {
+            if (lo.startsWith('select') && isMain(sql, 'product')) {
                 const [products, brands, categories, genders, frameTypes, shapes, materials, variants, inventory] = await Promise.all([
                     fetch('product', biz),
                     fetch('brands', biz),
@@ -337,16 +397,19 @@ module.exports = {
                 const shapeMap    = Object.fromEntries(shapes.map(s    => [s.id, s.name]));
                 const matMap      = Object.fromEntries(materials.map(m  => [m.id, m.name]));
 
+                // Variant to Product mapping
+                const varToProd = Object.fromEntries(variants.map(v => [v.variant_id, v.product_id]));
                 // Group variants by product_id (first variant = primary)
                 const varByProd   = {};
                 variants.forEach(v => { if (!varByProd[v.product_id]) varByProd[v.product_id] = v; });
 
-                // Sum inventory by product_id (with optional showroom filter)
+                // Sum inventory by product_id (more robust variant-based mapping)
                 const showroomFilter = params.find(p => typeof p === 'string' && p.startsWith('show_'));
                 const invByProd = {};
                 inventory.forEach(i => {
                     if (showroomFilter && i.showroom_id !== showroomFilter) return;
-                    invByProd[i.product_id] = (invByProd[i.product_id] || 0) + (i.available_qty || 0);
+                    const pid = i.product_id || varToProd[i.variant_id];
+                    if (pid) invByProd[pid] = (invByProd[pid] || 0) + parseInt(i.available_qty || 0);
                 });
 
                 // Single product lookup (e.g. GET /api/products/:id)
@@ -361,12 +424,27 @@ module.exports = {
                 const searchParam = params.find(p => typeof p === 'string' && p.includes('%'));
                 if (searchParam) {
                     const t = searchParam.replace(/%/g, '').toLowerCase();
-                    rows = rows.filter(p =>
-                        (p.product_name || '').toLowerCase().includes(t) ||
-                        (p.model_no     || '').toLowerCase().includes(t) ||
-                        (p.upc_code     || '').toLowerCase().includes(t) ||
-                        (brandMap[p.brand_id] || '').toLowerCase().includes(t)
-                    );
+                    rows = rows.filter(p => {
+                        const v = varByProd[p.product_id] || {};
+                        return (p.product_name || '').toLowerCase().includes(t) ||
+                               (p.model_no     || '').toLowerCase().includes(t) ||
+                               (p.upc_code     || '').toLowerCase().includes(t) ||
+                               (brandMap[p.brand_id] || '').toLowerCase().includes(t) ||
+                               (v.sku          || '').toLowerCase().includes(t) ||
+                               (v.barcode      || '').toLowerCase().includes(t);
+                    });
+                }
+                
+                // Support UI-level category filtering by name (e.g. frame vs lens)
+                const catTypeParam = params.find(p => typeof p === 'string' && p.startsWith('cat_type_'));
+                if (catTypeParam) {
+                    const type = catTypeParam.replace('cat_type_', '');
+                    rows = rows.filter(p => {
+                        const cat = (catMap[p.category_id] || '').toLowerCase();
+                        if (type === 'frame') return cat.includes('frame') || cat.includes('eyeglasses') || cat.includes('sunglasses');
+                        if (type === 'lens') return cat.includes('lens') || cat.includes('glasses');
+                        return true;
+                    });
                 }
 
                 // Apply ID filters
@@ -388,6 +466,7 @@ module.exports = {
                         color_code:       v?.color_code               || '',
                         size_code:        v?.size_code                || '',
                         variant_sku:      v?.sku                      || '',
+                        barcode:          v?.barcode                  || '',
                         primary_variant_id: v?.variant_id             || null,
                         total_stock:      invByProd[p.product_id]     || 0
                     };
@@ -399,10 +478,17 @@ module.exports = {
                 return { rows: singleId ? rows : rows.slice(typeof off === 'number' ? off : 0, (typeof off === 'number' ? off : 0) + (typeof lim === 'number' ? lim : 200)) };
             }
 
-            // ── 11. Generic Table Handler ───────────────────────────────────
+            // ── 11. Generic Table Handler (No Joins) ───────────────────────
             const tblMatch = stripParens(sql).match(/from\s+["']?([a-z0-9_]+)["']?/i);
-            if (tblMatch) {
-                const tbl = tblMatch[1];
+            // Only intercept simple "SELECT * FROM table" without complex expressions or joins
+            const isSimpleSelect = lo.startsWith('select *') || (lo.startsWith('select') && !lo.includes(',') && !lo.includes('('));
+            
+            if (isSimpleSelect && tblMatch && !lo.includes('join')) {
+                let tbl = tblMatch[1];
+                // Table Mapping - Removed pluralization as tables are singular in Supabase
+                const tableMap = {};
+                if (tableMap[tbl.toLowerCase()]) tbl = tableMap[tbl.toLowerCase()];
+
                 let q = supabase.from(tbl).select('*');
                 if (lo.includes('business_id')) q = q.eq('business_id', biz);
                 // Apply simple = conditions from WHERE (skip subqueries already stripped)
@@ -422,17 +508,22 @@ module.exports = {
             // ─────────────────────────────────────────────────────────────────
             // FALLBACK TO DIRECT PG (FOR WRITES AND UNHANDLED SELECTS)
             // ─────────────────────────────────────────────────────────────────
-            const res = await pool.query(sql, params);
+            
+            let pluralizedSql = sql;
+            const res = await pool.query(pluralizedSql, params);
+            
+            // Handle multi-statement results (array of Result objects)
+            const actualRes = Array.isArray(res) ? res[res.length - 1] : res;
+            
             return {
-                rows: res.rows || [],
-                rowCount: res.rowCount || 0,
-                lastId: res.rows[0]?.id || null
+                rows: actualRes.rows || [],
+                rowCount: actualRes.rowCount || 0,
+                lastId: (actualRes.rows && actualRes.rows[0]) ? actualRes.rows[0].id : null
             };
 
         } catch (err) {
             console.error(`[DB PROXY v48 ERROR]`, err.message);
-            // Re-throw or return empty? Let's return empty to avoid crashing the server
-            return { rows: [], rowCount: 0 };
+            throw err; // Re-throw so routes can handle and report the error
         }
     }
 };
